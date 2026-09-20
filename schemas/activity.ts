@@ -10,25 +10,6 @@ import { seoSchema } from "./seo";
 import { embeddedFaqSchema } from "./faq";
 
 /**
- * An icon token, not a file.
- *
- * The frontend maps "mountain-snow" onto whatever icon set it ships, so the
- * CMS stores a name rather than an SVG or a URL. The character restriction is
- * what makes that mapping safe: a pasted image URL fails here, at the point
- * someone can still fix it, instead of reaching the site as a missing glyph.
- */
-export const activityIconSchema = z
-  .string()
-  .trim()
-  .transform((value) => (value.length ? value.toLowerCase() : null))
-  .nullable()
-  .default(null)
-  .refine(
-    (value) => value === null || /^[a-z0-9][a-z0-9-]{0,63}$/.test(value),
-    'Use an icon name such as "mountain-snow" — letters, numbers and hyphens.',
-  );
-
-/**
  * Input accepted when creating or updating an activity.
  *
  * Deliberately smaller than a destination: an activity is a label a tour is
@@ -40,7 +21,6 @@ export const activityInputSchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(200),
   slug: bareSlugSchema,
   description: richContentSchema,
-  icon: activityIconSchema,
   featuredImage: optionalUrl,
   featuredImageHorizontal: optionalUrl,
   featuredImageVertical: optionalUrl,
@@ -75,3 +55,17 @@ export const activityInputWithRulesSchema = activityInputSchema.superRefine(
 
 export type ActivityInput = z.input<typeof activityInputSchema>;
 export type ActivityInputParsed = z.output<typeof activityInputSchema>;
+
+/**
+ * What the tour editor's inline create accepts: a name and a slug.
+ *
+ * Everything else is left at its default and filled in later in the real
+ * editor. The status is not accepted here at all — the repository pins a
+ * quick-created record to `draft`, so this control can never publish.
+ */
+export const quickActivitySchema = z.object({
+  name: z.string().trim().min(1, "Name is required.").max(200),
+  slug: bareSlugSchema,
+});
+
+export type QuickActivityInput = z.output<typeof quickActivitySchema>;

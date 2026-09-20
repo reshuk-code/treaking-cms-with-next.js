@@ -44,18 +44,13 @@ export default async function DestinationsListPage({
   });
 
   const filters = destinationFiltersSchema.parse({
-    country: params.country,
     featured: params.featured,
   });
 
-  const [result, countries] = await Promise.all([
-    destinations.list({
-      ...options,
-      country: filters.country || undefined,
-      featured: filters.featured === "" ? undefined : filters.featured === "yes",
-    }),
-    destinations.countries(),
-  ]);
+  const result = await destinations.list({
+    ...options,
+    featured: filters.featured === "" ? undefined : filters.featured === "yes",
+  });
 
   const canCreate = hasPermission({ role: session.role }, "destinations.create");
   const canUpdate = hasPermission({ role: session.role }, "destinations.update");
@@ -65,7 +60,6 @@ export default async function DestinationsListPage({
   const filtered =
     Boolean(options.search) ||
     options.status !== "any" ||
-    Boolean(filters.country) ||
     filters.featured !== "";
 
   return (
@@ -86,7 +80,7 @@ export default async function DestinationsListPage({
       />
 
       <Card>
-        <DestinationFilters countries={countries} />
+        <DestinationFilters />
 
         {result.items.length === 0 ? (
           <EmptyState
@@ -98,7 +92,7 @@ export default async function DestinationsListPage({
             }
             description={
               filtered
-                ? "Try a different search term, or clear the status, country and featured filters."
+                ? "Try a different search term, or clear the status and featured filters."
                 : "Add the places you run trips to. Tour packages will reference them."
             }
             action={
@@ -116,8 +110,6 @@ export default async function DestinationsListPage({
             <THead>
               <tr>
                 <TH>Name</TH>
-                <TH className="hidden sm:table-cell">Where</TH>
-                <TH className="hidden lg:table-cell">Best season</TH>
                 <TH className="hidden md:table-cell">Status</TH>
                 <TH className="text-right">Actions</TH>
               </tr>
@@ -159,26 +151,9 @@ export default async function DestinationsListPage({
                         </div>
                         <span className="block truncate text-xs text-muted-foreground">
                           <code>{destination.slug}</code>
-                          {destination.typicalDuration
-                            ? ` · ${destination.typicalDuration}`
-                            : ""}
                         </span>
                       </div>
                     </div>
-                  </TD>
-
-                  <TD className="hidden text-xs text-muted-foreground sm:table-cell">
-                    {[destination.region, destination.country]
-                      .filter(Boolean)
-                      .join(", ") || "—"}
-                  </TD>
-
-                  <TD className="hidden text-xs text-muted-foreground lg:table-cell">
-                    {destination.bestSeason.length
-                      ? `${destination.bestSeason.length} month${
-                          destination.bestSeason.length === 1 ? "" : "s"
-                        }`
-                      : "Year-round"}
                   </TD>
 
                   <TD className="hidden md:table-cell">
@@ -210,7 +185,6 @@ export default async function DestinationsListPage({
           searchParams={{
             search: options.search || undefined,
             status: options.status === "any" ? undefined : options.status,
-            country: filters.country || undefined,
             featured: filters.featured || undefined,
           }}
         />

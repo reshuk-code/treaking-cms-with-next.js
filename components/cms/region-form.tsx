@@ -18,14 +18,13 @@ import {
   Field,
   Input,
   Select,
-  Textarea,
 } from "@/components/ui/field";
 import { useFormFeedback } from "@/hooks/use-form-feedback";
 import { IDLE } from "@/lib/actions/result";
-import { richListContentToValue } from "@/lib/rich-text";
+import { defaultNewStatus } from "@/lib/publishing";
+import { richTextExcerpt } from "@/lib/rich-text";
 import { toDateTimeLocal } from "@/lib/utils";
 import { slugify } from "@/schemas/common";
-import { MONTHS } from "@/schemas/destination";
 import type { Region } from "@/types/content";
 
 /**
@@ -35,9 +34,7 @@ import type { Region } from "@/types/content";
  * feeds it to an IntersectionObserver effect.
  */
 const SECTIONS = [
-  { id: "section-facts", label: "Facts" },
   { id: "section-description", label: "Overview" },
-  { id: "section-highlights", label: "Highlights" },
   { id: "section-images", label: "Images" },
   { id: "section-faqs", label: "FAQs" },
   { id: "section-seo", label: "SEO" },
@@ -45,17 +42,13 @@ const SECTIONS = [
 
 /** One tab per section. See the note in `tour-form.tsx`. */
 const CONTENT_TABS = [
-  { id: "facts", label: "Facts", sectionIds: ["section-facts"] },
   { id: "overview", label: "Overview", sectionIds: ["section-description"] },
-  { id: "highlights", label: "Highlights", sectionIds: ["section-highlights"] },
   { id: "images", label: "Images", sectionIds: ["section-images"] },
   { id: "faqs", label: "FAQs", sectionIds: ["section-faqs"] },
 ];
 
 export interface RegionFormProps {
   region: Region | null;
-  /** Countries already in use, offered as suggestions. */
-  countryOptions: string[];
   siteUrl: string;
   /** Where the frontend mounts regions. For the slug hint only. */
   basePath?: string;
@@ -71,7 +64,6 @@ export interface RegionFormProps {
  */
 export function RegionForm({
   region,
-  countryOptions,
   siteUrl,
   basePath = "/regions",
   canPublish,
@@ -84,19 +76,14 @@ export function RegionForm({
     region?.slug ?? null,
   );
   const slug = slugOverride ?? (name ? slugify(name) : "");
-  const [shortDescription, setShortDescription] = useState(
-    region?.shortDescription ?? "",
-  );
   // Mirrored out of the editors so the SEO panel grades what is on
   // screen rather than what was last saved.
   const [seoContent, setSeoContent] = useState(region?.description ?? "");
   const [seoImage, setSeoImage] = useState(region?.featuredImage ?? "");
 
-  const [status, setStatus] = useState(region?.status ?? "draft");
+  const [status, setStatus] = useState(region?.status ?? defaultNewStatus(canPublish));
 
   const errors = state.fieldErrors ?? {};
-
-  const season = new Set(region?.bestSeason ?? []);
 
   /**
    * Submitting by hand rather than through `<form action=...>`.
@@ -171,83 +158,10 @@ export function RegionForm({
                   />
                 )}
               </Field>
-
-              <Field
-                id="shortDescription"
-                label="Short description"
-                error={errors.shortDescription?.[0]}
-                hint="One or two lines for cards and listings."
-              >
-                {(props) => (
-                  <Textarea
-                    {...props}
-                    name="shortDescription"
-                    value={shortDescription}
-                    onChange={(event) => setShortDescription(event.target.value)}
-                    rows={2}
-                  />
-                )}
-              </Field>
             </CardBody>
           </Card>
 
           <ContentManagementPanel>
-
-          <FormSection id="section-facts" title="Facts" bodyClassName="space-y-5">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field id="country" label="Country" error={errors.country?.[0]}>
-                {(props) => (
-                  <>
-                    <Input
-                      {...props}
-                      name="country"
-                      defaultValue={region?.country ?? ""}
-                      list="region-countries"
-                      placeholder="Nepal"
-                    />
-                    <datalist id="region-countries">
-                      {countryOptions.map((option) => (
-                        <option key={option} value={option} />
-                      ))}
-                    </datalist>
-                  </>
-                )}
-              </Field>
-
-              <Field
-                id="elevationRange"
-                label="Elevation range"
-                error={errors.elevationRange?.[0]}
-              >
-                {(props) => (
-                  <Input
-                    {...props}
-                    name="elevationRange"
-                    defaultValue={region?.elevationRange ?? ""}
-                    placeholder="2,800–5,400 m"
-                  />
-                )}
-              </Field>
-            </div>
-
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium text-foreground">
-                Best season
-              </legend>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-4">
-                {MONTHS.map((month) => (
-                  <CheckboxField
-                    key={month}
-                    id={`bestSeason-${month}`}
-                    name="bestSeason"
-                    value={month}
-                    label={month}
-                    defaultChecked={season.has(month)}
-                  />
-                ))}
-              </div>
-            </fieldset>
-          </FormSection>
 
           <FormSection id="section-description" title="Overview">
             <RichTextField
@@ -258,17 +172,6 @@ export function RegionForm({
               defaultValue={region?.description ?? ""}
               error={errors.description?.[0]}
               onValueChange={setSeoContent}
-            />
-          </FormSection>
-
-          <FormSection id="section-highlights" title="Highlights">
-            <RichTextField
-              id="highlights"
-              name="highlights"
-              label="Highlights"
-              hideLabel
-              defaultValue={richListContentToValue(region?.highlights)}
-              error={errors.highlights?.[0]}
             />
           </FormSection>
 
@@ -290,7 +193,7 @@ export function RegionForm({
             id="section-seo"
             seo={region?.seo ?? null}
             fallbackTitle={name}
-            fallbackDescription={shortDescription}
+            fallbackDescription={richTextExcerpt(seoContent, { maxChars: 160 })}
             slug={`${basePath}/${slug}`}
             siteUrl={siteUrl}
             errors={errors}
@@ -341,13 +244,17 @@ export function RegionForm({
                 </p>
               ) : null}
 
-              {status === "scheduled" ? (
+              {status === "published" || status === "scheduled" ? (
                 <Field
                   id="publishedAt"
-                  label="Publish at"
+                  label={status === "scheduled" ? "Publish at" : "Published on"}
                   error={errors.publishedAt?.[0]}
-                  hint="Goes live automatically once this time passes."
-                  required
+                  hint={
+                    status === "scheduled"
+                      ? "Goes live automatically once this time passes."
+                      : "Back-date or post-date it. Leave blank to stamp it now."
+                  }
+                  required={status === "scheduled"}
                 >
                   {(props) => (
                     <Input

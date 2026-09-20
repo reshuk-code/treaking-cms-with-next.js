@@ -4,12 +4,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PreviewBanner } from "@/components/frontend/preview-banner";
-import { RichListText, RichText } from "@/components/frontend/rich-text";
+import { RichText } from "@/components/frontend/rich-text";
 import { pickImage } from "@/lib/images";
-import { isEmptyRichList } from "@/lib/rich-text";
 import { cms } from "@/lib/cms";
 import { EmbeddedFaqs } from "@/components/frontend/embedded-faqs";
 import { generateCmsMetadata } from "@/lib/seo/metadata";
+import { richTextExcerpt } from "@/lib/rich-text";
 import { pluralise } from "@/lib/utils";
 import type { Destination } from "@/types/content";
 
@@ -42,7 +42,7 @@ export async function generateMetadata({
   return generateCmsMetadata({
     title: destination.name,
     path: `/destinations/${destination.slug}`,
-    description: destination.shortDescription,
+    description: richTextExcerpt(destination.description, { maxChars: 160 }),
     image: pickImage(destination, "banner"),
     seo: destination.seo,
   });
@@ -65,10 +65,6 @@ export default async function DestinationPage({
   // Tours that go here. Empty until the client publishes some, which is the
   // normal state on a new site rather than an error.
   const tours = await cms.tours.getByDestination(destination.id, 3);
-
-  const place = [destination.region, destination.country]
-    .filter(Boolean)
-    .join(", ");
 
   return (
     <>
@@ -108,29 +104,14 @@ export default async function DestinationPage({
               </Link>
             </nav>
 
-            {place ? (
-              <p className="text-xs font-medium uppercase tracking-[0.25em] text-muted-foreground">
-                {place}
-              </p>
-            ) : null}
-
             <h1 className="mt-3 text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
               {destination.name}
             </h1>
-
-            {destination.shortDescription ? (
-              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-                {destination.shortDescription}
-              </p>
-            ) : null}
           </div>
         </header>
 
         <div className="mx-auto w-full max-w-4xl px-6 py-16">
-          {/* ------------------------------------------------------ facts */}
-          <FactRow destination={destination} />
-
-          <div className="mt-14 grid gap-12 lg:grid-cols-[1fr_16rem] lg:items-start">
+          <div className="grid gap-12 lg:grid-cols-[1fr_16rem] lg:items-start">
             <div>
               {destination.description ? (
                 <div className="leading-relaxed [&_h2]:mt-10 [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h3]:mt-8 [&_h3]:text-xl [&_h3]:font-semibold">
@@ -166,17 +147,6 @@ export default async function DestinationPage({
 
             {/* --------------------------------------------------- aside */}
             <aside className="space-y-8 lg:sticky lg:top-8">
-              {!isEmptyRichList(destination.highlights) ? (
-                <section>
-                  <h2 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                    Highlights
-                  </h2>
-                  <div className="mt-4 text-sm leading-relaxed">
-                    <RichListText content={destination.highlights} />
-                  </div>
-                </section>
-              ) : null}
-
               <section className="rounded-card bg-card p-5 shadow-[var(--shadow-card)] dark:border dark:border-border">
                 <p className="text-sm font-medium">Thinking about {destination.name}?</p>
                 <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
@@ -230,36 +200,5 @@ export default async function DestinationPage({
         </div>
       </article>
     </>
-  );
-}
-
-/** The four facts a traveller asks first, each hidden when unknown. */
-function FactRow({ destination }: { destination: Destination }) {
-  const facts = [
-    { label: "Country", value: destination.country },
-    { label: "Region", value: destination.region },
-    { label: "Typical trip", value: destination.typicalDuration },
-    {
-      label: "Best months",
-      value:
-        destination.bestSeason.length > 0
-          ? destination.bestSeason.map((month) => month.slice(0, 3)).join(", ")
-          : "Year-round",
-    },
-  ].filter((fact) => Boolean(fact.value));
-
-  if (facts.length === 0) return null;
-
-  return (
-    <dl className="grid gap-6 border-y border-border py-6 sm:grid-cols-4">
-      {facts.map((fact) => (
-        <div key={fact.label}>
-          <dt className="text-xs uppercase tracking-wider text-muted-foreground">
-            {fact.label}
-          </dt>
-          <dd className="mt-1 text-sm font-medium">{fact.value}</dd>
-        </div>
-      ))}
-    </dl>
   );
 }

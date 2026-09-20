@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { EnquiryForm } from "@/components/frontend/enquiry-form";
 import { RichText } from "@/components/frontend/rich-text";
 import { cms } from "@/lib/cms";
+import { richTextExcerpt } from "@/lib/rich-text";
 import { formatDate } from "@/lib/utils";
 
 /**
@@ -239,21 +240,25 @@ async function DestinationGridBlock(props: Record<string, unknown>) {
         <Empty what="destinations" />
       ) : (
         <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((item) => (
+          {items.map((item) => {
+            const blurb = richTextExcerpt(item.description);
+
+            return (
             <li key={item.id} className="group">
               <Link href={`/destinations/${item.slug}`} className="block">
                 <CardImage url={item.featuredImage} />
                 <h3 className="mt-4 text-lg font-semibold tracking-tight group-hover:underline underline-offset-4">
                   {item.name}
                 </h3>
-                {item.shortDescription ? (
-                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-                    {item.shortDescription}
+                {blurb ? (
+                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground sm:line-clamp-4">
+                    {blurb}
                   </p>
                 ) : null}
               </Link>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </Band>

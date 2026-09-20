@@ -9,6 +9,7 @@ import { hasPermission, permissionsForRole } from "@/lib/auth/permissions";
 import { getCmsConfig, getEnabledModules, isModuleEnabled } from "@/lib/cms/config";
 import { enquiries } from "@/lib/cms/repositories/enquiries";
 import { users } from "@/lib/cms/repositories/users";
+import { isStaffRole } from "@/types/user";
 
 /**
  * Authenticated admin shell.
@@ -30,6 +31,14 @@ export default async function DashboardLayout({
 
   const user = await users.get(session.userId);
   if (!user || !user.active) redirect("/admin/login");
+
+  /*
+   * A traveller holds no permission, so every screen inside this shell would
+   * refuse them anyway. Sending them to their own account page instead of
+   * rendering an admin frame with an empty sidebar is the difference between
+   * "you are in the wrong place" and "the CMS is broken".
+   */
+  if (!isStaffRole(user.role)) redirect("/account");
 
   const config = getCmsConfig();
   const granted = [

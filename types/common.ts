@@ -95,7 +95,7 @@ export interface ListOptions {
   status?: ContentStatus | "any";
   sort?: string;
   order?: SortDirection;
-  /** Extra equality filters, e.g. `{ destinationId: "abc" }`. */
+  /** Extra equality filters, e.g. `{ difficulty: "moderate" }`. */
   filters?: Record<string, unknown>;
 }
 

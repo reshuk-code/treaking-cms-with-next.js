@@ -20,6 +20,7 @@ export const RESOURCES = [
   "destinations",
   "regions",
   "tours",
+  "tourCategories",
   "activities",
   "testimonials",
   "faqs",
@@ -55,6 +56,7 @@ const CONTENT_RESOURCES: Resource[] = [
   "destinations",
   "regions",
   "tours",
+  "tourCategories",
   "activities",
   "testimonials",
   "faqs",
@@ -109,6 +111,19 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 
   // Read-only access, for clients who just want to look.
   viewer: [...expand([...RESOURCES], ["read"])],
+
+  /*
+   * A traveller holds no admin permission at all, and the empty array is the
+   * whole of the enforcement: `requirePermission()` consults this table, so a
+   * traveller cookie is refused by every server action in the CMS without any
+   * of them having to know travellers exist. The redirect out of the admin
+   * shell is a courtesy on top of it, not the boundary.
+   *
+   * Nothing may be added here. A traveller who needs to see something on the
+   * public site is served by a repository method that checks ownership, not by
+   * a permission that would also unlock the admin screen behind it.
+   */
+  traveller: [],
 };
 
 /** The full permission set a role grants. */
@@ -148,6 +163,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   editor: "Editor",
   author: "Author",
   viewer: "Viewer",
+  traveller: "Traveller",
 };
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
@@ -157,6 +173,8 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   editor: "Creates, edits and publishes all content. No user management.",
   author: "Writes and edits content, but cannot publish or delete it.",
   viewer: "Read-only access to the admin panel.",
+  traveller:
+    "A customer with an account on the public website. No admin access.",
 };
 
 /**

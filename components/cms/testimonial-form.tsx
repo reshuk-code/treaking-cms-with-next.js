@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/field";
 import { useFormFeedback } from "@/hooks/use-form-feedback";
 import { IDLE } from "@/lib/actions/result";
+import { defaultNewStatus } from "@/lib/publishing";
 import { toDateTimeLocal } from "@/lib/utils";
 import type { Testimonial } from "@/types/content";
 
@@ -50,7 +51,7 @@ export function TestimonialForm({
     IDLE,
   );
 
-  const [status, setStatus] = useState(testimonial?.status ?? "draft");
+  const [status, setStatus] = useState(testimonial?.status ?? defaultNewStatus(canPublish));
   const [rating, setRating] = useState(testimonial?.rating ?? 5);
 
   const errors = state.fieldErrors ?? {};
@@ -264,13 +265,17 @@ export function TestimonialForm({
                 </p>
               ) : null}
 
-              {status === "scheduled" ? (
+              {status === "published" || status === "scheduled" ? (
                 <Field
                   id="publishedAt"
-                  label="Publish at"
+                  label={status === "scheduled" ? "Publish at" : "Published on"}
                   error={errors.publishedAt?.[0]}
-                  hint="Goes live automatically once this time passes."
-                  required
+                  hint={
+                    status === "scheduled"
+                      ? "Goes live automatically once this time passes."
+                      : "Back-date or post-date it. Leave blank to stamp it now."
+                  }
+                  required={status === "scheduled"}
                 >
                   {(props) => (
                     <Input

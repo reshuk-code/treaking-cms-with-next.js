@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { cms } from "@/lib/cms";
 import { generateCmsMetadata } from "@/lib/seo/metadata";
+import { richTextExcerpt } from "@/lib/rich-text";
 import { pluralise } from "@/lib/utils";
 import { TOUR_DIFFICULTIES, type TourDifficulty } from "@/types/content";
 
@@ -91,9 +92,14 @@ export default async function ToursIndexPage({
       ) : (
         <ul className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {tours.map((tour) => {
-            const destination = tour.destinationId
-              ? destinationNames.get(tour.destinationId)
-              : undefined;
+            // A trip can span several destinations. Names are joined rather
+            // than linked here because the whole card is already one link.
+            const destinationLabel = tour.destinationIds
+              .map((destinationId) => destinationNames.get(destinationId)?.name)
+              .filter(Boolean)
+              .join(" · ");
+
+            const blurb = richTextExcerpt(tour.description);
 
             return (
               <li key={tour.id} className="group flex flex-col">
@@ -106,9 +112,9 @@ export default async function ToursIndexPage({
                 </Link>
 
                 <div className="mt-4 flex flex-1 flex-col">
-                  {destination ? (
+                  {destinationLabel ? (
                     <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                      {destination.name}
+                      {destinationLabel}
                     </p>
                   ) : null}
 
@@ -121,9 +127,9 @@ export default async function ToursIndexPage({
                     </Link>
                   </h2>
 
-                  {tour.shortDescription ? (
-                    <p className="mt-2 line-clamp-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-                      {tour.shortDescription}
+                  {blurb ? (
+                    <p className="mt-2 line-clamp-2 flex-1 text-sm leading-relaxed text-muted-foreground sm:line-clamp-3">
+                      {blurb}
                     </p>
                   ) : (
                     <div className="flex-1" />

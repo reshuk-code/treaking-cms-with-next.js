@@ -54,8 +54,8 @@ these items are the repositories, admin screens and SDK namespaces.
       author byline; one category and free tags per post, filterable in the
       list. `/admin/blog`, `cms.posts`. Slugs are bare, not paths: the project
       mounts posts at whatever route it wants.
-- [x] **Destinations** — name, place, coordinates, best season, highlights,
-      gallery, featured flag and display order, with the same draft/schedule/
+- [x] **Destinations** — the countries a company sells trips in: name,
+      description, FAQs, gallery, featured flag and display order, with the same draft/schedule/
       trash lifecycle as pages. `/admin/destinations`, `cms.destinations`.
 - [x] **Tour packages** — pricing with a compare-at price, duration,
       difficulty, group size, altitude, best season, highlights, inclusions and
@@ -76,9 +76,8 @@ these items are the repositories, admin screens and SDK namespaces.
       rendering by `cms.faqs.getGrouped()`. `/admin/faqs`, `cms.faqs`.
 - [x] **Enquiries** — inbox for the contact/booking form. Triage states,
       internal notes, resolved subject. `/admin/enquiries`, `cms.enquiries`.
-- [x] **Regions** — the area a trip happens in, one level above a destination:
-      name, slug, description, country, elevation range, highlights, best
-      season, gallery, featured flag and display order, with the same
+- [x] **Regions** — the area a trip happens in, inside a destination:
+      name, slug, description, free-text country, FAQs, gallery, featured flag and display order, with the same
       draft/schedule/trash lifecycle as everything else. `/admin/regions`,
       `cms.regions`.
 
@@ -87,17 +86,31 @@ these items are the repositories, admin screens and SDK namespaces.
       is the exception to the rule about categories and tags a few lines below,
       and it is the reason for it.
 
-      **`Destination.region` is deliberately untouched.** It stays free text.
-      Making it a reference would have rewritten a field that eight display
-      sites already read, and stranded every destination whose current text
-      matches no record. The two can be reconciled later if a client asks.
+      **`Destination.region` and `Destination.country` are gone.** They were
+      free-text strings duplicating what the Region record now holds; a trip
+      links to both a destination and a region by id instead. `Region.country`
+      remains free text — the reconciliation into a real reference is still
+      open if a client asks for it.
 
       Regions needed new entries in `COLLECTIONS`, `CMS_MODULES` and the
       permission `RESOURCES` — it was not one of the pre-planned models.
 
+      **Connected to trips.** A tour carries `regionIds`, picked with a
+      checkbox list beside Destinations in the trip editor, and
+      `cms.tours.getByRegion()` reads them back. Until then a region was an
+      island: nothing referenced it and it appeared nowhere on the site.
+
+      `destinationId` became `destinationIds` in the same change, because a
+      trip that crosses Nepal and Tibet could previously only claim one. Both
+      are filtered in the repository rather than through `contains`, for the
+      reason `posts.list` gives about tags.
+
       **Not built:** no coordinates (a region is an area; a pin at its notional
       centre is wrong more often than useful), no public `/regions` route yet —
-      the SDK namespace is there, the project mounts it where it likes.
+      the SDK namespace is there, the project mounts it where it likes. A trip
+      page therefore prints its regions as plain text, not links. No inline
+      “+ Add New” create from inside the trip editor, and regions are not
+      nested under destinations the way a WordPress taxonomy would be.
 
 - [x] **Admin theming is local** — `components/cms/theme.tsx` replaced
       `next-themes`, which is no longer a dependency.
@@ -451,6 +464,59 @@ put a deploy inside the CMS).
 - [ ] **Implement the Firebase adapter**, or formally drop it. The file
       documents what makes Firestore awkward for this contract.
 - [ ] **S3 storage adapter** with presigned browser uploads.
+- [x] **Traveller accounts** — sign-up, sign-in, sign-out and a profile on the
+      public site. `/account`, `/account/login`, `/account/register`,
+      `lib/auth/traveller.ts`, `components/frontend/account-forms.tsx`.
+
+      **A traveller is a role, not a second user store.** They live in the
+      `users` collection beside staff, which is one table and one password
+      implementation rather than two of each. That is only safe because of
+      three things, and all three have to stay true:
+
+      1. `traveller` grants no permission at all. `ROLE_PERMISSIONS.traveller`
+         is `[]`, so `requirePermission()` refuses a traveller in every server
+         action in the CMS without any of them knowing travellers exist. That
+         empty array is the boundary; nothing may be added to it.
+      2. Every admin surface offers `STAFF_ROLES`, never `ROLES` — the users
+         list, the create form, the role select and the permission matrix.
+         `ROLES` is derived as `[...STAFF_ROLES, "traveller"]` so the two
+         cannot drift. `roleSchema` parses staff roles only, so a hand-posted
+         `role=traveller` is rejected before it reaches a repository.
+      3. `users.update()` refuses to move a record across the staff/traveller
+         line in either direction, in the repository rather than in the screen.
+
+      **Each door refuses the other's credentials.** Traveller details at
+      `/admin/login` and staff details at `/account/login` are both valid and
+      both refused, with the session destroyed rather than left to be bounced
+      by a layout. Both say "Those details do not match an active account" —
+      naming the real reason would confirm the address is registered, which is
+      the enumeration the admin form already avoids. `linkExternalIdentity`
+      refuses travellers too, so the rule holds for the hosted providers.
+
+      **`isFirstRun()` and the admin user list count staff only.** Left
+      implicit, a stranger registering on the public site would have closed the
+      setup screen on an install that was never set up, and the client's
+      customers would have filled the Users screen.
+
+      **The header link is static.** Deciding between "Sign in" and "Your
+      account" there would mean reading the session cookie in the public root
+      layout, which opts every page on the site out of static rendering. One
+      "Account" link is right either way, and `/account` redirects.
+
+      **Deliberately not built:** password reset and email verification — this
+      template ships no mailer, and a reset flow is the first thing a project
+      adds for itself. Email is therefore not editable from the profile: with
+      nothing to confirm a new address against, an unconfirmed email change is
+      an account takeover. Also not built: an admin Customers screen, so
+      travellers are currently invisible in the admin (the `customers` module
+      and permissions exist, and `users.listTravellers()` is the read it would
+      use); social sign-in; and linking an enquiry to the account that filed
+      it, which is what would make an account worth having.
+
+      **Traveller sign-in needs the built-in `credentials` provider.** Under a
+      hosted provider the CMS does not own the session, so the account screens
+      say so instead of rendering a form that posts into nothing.
+
 - [ ] **Custom roles** — edit permission bundles from the admin.
 - [ ] **Per-record ownership** so an author edits only their own drafts.
 - [ ] **Session revocation** ("sign out everywhere").

@@ -101,7 +101,6 @@ export default async function ActivitiesListPage({
             <THead>
               <tr>
                 <TH>Name</TH>
-                <TH className="hidden lg:table-cell">Icon</TH>
                 <TH className="hidden sm:table-cell">Used by</TH>
                 <TH className="hidden md:table-cell">Status</TH>
                 <TH className="text-right">Actions</TH>
@@ -140,10 +139,6 @@ export default async function ActivitiesListPage({
                           </span>
                         </div>
                       </div>
-                    </TD>
-
-                    <TD className="hidden text-xs text-muted-foreground lg:table-cell">
-                      {item.icon ? <code>{item.icon}</code> : "—"}
                     </TD>
 
                     <TD className="hidden text-xs text-muted-foreground sm:table-cell">

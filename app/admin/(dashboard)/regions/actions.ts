@@ -15,7 +15,10 @@ import { parseFaqRows } from "@/lib/actions/faq-input";
 import { requirePermission } from "@/lib/auth";
 import { activity } from "@/lib/cms/repositories/activity";
 import { regions } from "@/lib/cms/repositories/regions";
-import { regionInputWithRulesSchema } from "@/schemas/region";
+import {
+  quickRegionSchema,
+  regionInputWithRulesSchema,
+} from "@/schemas/region";
 import type { ContentStatus } from "@/types/common";
 
 /**
@@ -29,18 +32,13 @@ function parseFormData(formData: FormData) {
   return {
     name: formString(formData.get("name")),
     slug: formString(formData.get("slug")) || formString(formData.get("name")),
-    shortDescription: formString(formData.get("shortDescription")),
     description: formString(formData.get("description")),
     featuredImage: formString(formData.get("featuredImage")),
     featuredImageHorizontal: formString(formData.get("featuredImageHorizontal")),
     featuredImageVertical: formString(formData.get("featuredImageVertical")),
     bannerImage: formString(formData.get("bannerImage")),
     gallery: formData.getAll("gallery").map(String),
-    country: formString(formData.get("country")),
-    elevationRange: formString(formData.get("elevationRange")),
-    highlights: formString(formData.get("highlights")),
     faqs: parseFaqRows(formData),
-    bestSeason: formData.getAll("bestSeason").map(String),
     featured: formBoolean(formData.get("featured")),
     order: formString(formData.get("order")) || "0",
     status: formString(formData.get("status")),
@@ -185,6 +183,48 @@ export async function duplicateRegionAction(id: string): Promise<ActionState> {
 
     revalidatePath("/admin/regions");
     return actionSuccess("Region duplicated.", { id: copy.id });
+  } catch (error) {
+    return toActionState(error);
+  }
+}
+
+/**
+ * Creates a region from the tour editor, without leaving it.
+ *
+ * Returns the record rather than revalidating the tour route: a revalidation
+ * here would re-render the editor around a half-filled trip and throw away
+ * everything typed so far. The caller adds the returned option to its own
+ * state instead.
+ */
+export async function quickCreateRegionAction(
+  name: string,
+  slug: string,
+): Promise<ActionState> {
+  try {
+    const session = await requirePermission("regions.create");
+
+    const parsed = quickRegionSchema.safeParse({ name, slug: slug || name });
+    if (!parsed.success) return toActionState(parsed.error);
+
+    const record = await regions.quickCreate(parsed.data, {
+      userId: session.userId,
+    });
+
+    await activity.record({
+      action: "created",
+      entityType: "regions",
+      entityId: record.id,
+      entityTitle: record.name,
+      userId: session.userId,
+      userName: session.name,
+    });
+
+    revalidatePath("/admin/regions");
+
+    return actionSuccess(`"${record.name}" added.`, {
+      id: record.id,
+      name: record.name,
+    });
   } catch (error) {
     return toActionState(error);
   }

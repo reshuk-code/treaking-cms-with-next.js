@@ -44,18 +44,13 @@ export default async function RegionsListPage({
   });
 
   const filters = regionFiltersSchema.parse({
-    country: params.country,
     featured: params.featured,
   });
 
-  const [result, countries] = await Promise.all([
-    regions.list({
-      ...options,
-      country: filters.country || undefined,
-      featured: filters.featured === "" ? undefined : filters.featured === "yes",
-    }),
-    regions.countries(),
-  ]);
+  const result = await regions.list({
+    ...options,
+    featured: filters.featured === "" ? undefined : filters.featured === "yes",
+  });
 
   const canCreate = hasPermission({ role: session.role }, "regions.create");
   const canUpdate = hasPermission({ role: session.role }, "regions.update");
@@ -65,7 +60,6 @@ export default async function RegionsListPage({
   const filtered =
     Boolean(options.search) ||
     options.status !== "any" ||
-    Boolean(filters.country) ||
     filters.featured !== "";
 
   return (
@@ -86,7 +80,7 @@ export default async function RegionsListPage({
       />
 
       <Card>
-        <RegionFilters countries={countries} />
+        <RegionFilters />
 
         {result.items.length === 0 ? (
           <EmptyState
@@ -94,7 +88,7 @@ export default async function RegionsListPage({
             title={filtered ? "No regions match those filters" : "No regions yet"}
             description={
               filtered
-                ? "Try a different search term, or clear the status, country and featured filters."
+                ? "Try a different search term, or clear the status and featured filters."
                 : "Add the areas you run trips in. Each one gets its own page."
             }
             action={
@@ -110,8 +104,6 @@ export default async function RegionsListPage({
             <THead>
               <tr>
                 <TH>Name</TH>
-                <TH className="hidden sm:table-cell">Country</TH>
-                <TH className="hidden lg:table-cell">Best season</TH>
                 <TH className="hidden md:table-cell">Status</TH>
                 <TH className="text-right">Actions</TH>
               </tr>
@@ -151,22 +143,9 @@ export default async function RegionsListPage({
                         </div>
                         <span className="block truncate text-xs text-muted-foreground">
                           <code>{region.slug}</code>
-                          {region.elevationRange ? ` · ${region.elevationRange}` : ""}
                         </span>
                       </div>
                     </div>
-                  </TD>
-
-                  <TD className="hidden text-xs text-muted-foreground sm:table-cell">
-                    {region.country || "—"}
-                  </TD>
-
-                  <TD className="hidden text-xs text-muted-foreground lg:table-cell">
-                    {region.bestSeason.length
-                      ? `${region.bestSeason.length} month${
-                          region.bestSeason.length === 1 ? "" : "s"
-                        }`
-                      : "Year-round"}
                   </TD>
 
                   <TD className="hidden md:table-cell">
@@ -198,7 +177,6 @@ export default async function RegionsListPage({
           searchParams={{
             search: options.search || undefined,
             status: options.status === "any" ? undefined : options.status,
-            country: filters.country || undefined,
             featured: filters.featured || undefined,
           }}
         />

@@ -80,8 +80,6 @@ export function buildContent({ media, author, stableId }) {
       ...record("regions", "everest", 240),
       name: "Everest",
       slug: "everest",
-      shortDescription:
-        "The Khumbu: Sherpa villages, working monasteries and eight of the highest mountains on earth.",
       description: `The Khumbu is the valley most people picture when they picture Nepal. It rises from the Dudh Koshi river at around 2,800 metres to the south face of Everest itself, and almost everyone who walks it arrives the same way — on a sixteen-minute flight into Lukla, then north on foot.
 
 ## What the walking is like
@@ -101,7 +99,6 @@ Khumbu is Sherpa country, and it has been Buddhist for four centuries. Tengboche
         img("yak-caravan"),
         img("gokyo-lake"),
       ],
-      country: "Nepal",
       elevationRange: "2,600–5,545 m",
       highlights: [
         "Everest Base Camp and the Khumbu Icefall",
@@ -122,8 +119,6 @@ Khumbu is Sherpa country, and it has been Buddhist for four centuries. Tengboche
       ...record("regions", "annapurna", 232),
       name: "Annapurna",
       slug: "annapurna",
-      shortDescription:
-        "Rice terraces to glacier in a week: the most varied trekking in Nepal, reached from Pokhara.",
       description: `Annapurna is the region that converts people. You start in subtropical farmland outside Pokhara, walk up through rhododendron forest that turns scarlet in March, and finish on a glacier ringed by peaks over 7,000 metres. Very few places on earth compress that much landscape into a week's walking.
 
 ## Two very different routes
@@ -142,7 +137,6 @@ Everything starts in Pokhara, a lakeside town 200 kilometres west of Kathmandu, 
         img("thorong-la"),
         img("phewa-lake-sunset"),
       ],
-      country: "Nepal",
       elevationRange: "800–5,416 m",
       highlights: [
         "The glacial amphitheatre of Annapurna Base Camp",
@@ -163,8 +157,6 @@ Everything starts in Pokhara, a lakeside town 200 kilometres west of Kathmandu, 
       ...record("regions", "langtang", 198),
       name: "Langtang",
       slug: "langtang",
-      shortDescription:
-        "The closest big mountains to Kathmandu, and the quietest trails of the three main regions.",
       description: `Langtang is seven hours by road from Kathmandu and no flight is involved, which makes it the region to choose when you have nine days rather than sixteen. It is also the least crowded of Nepal's three main trekking areas — on the walk up through the gorge you will pass more langur monkeys than people.
 
 ## After 2015
@@ -176,7 +168,6 @@ The earthquake of April 2015 buried Langtang village under a landslide and kille
 Three days up a steep forested gorge, then the valley opens out at Kyanjin Gompa, 3,870 metres, below a wall of ice. Most people spend a day there climbing Kyanjin Ri or Tserko Ri for the view down the whole valley, and buying yak cheese from the small factory the Swiss set up in the 1950s.`,
       featuredImage: img("kyanjin-gompa"),
       gallery: [img("gangchempo"), img("kyanjin-snowfall")],
-      country: "Nepal",
       elevationRange: "1,460–4,984 m",
       highlights: [
         "No flight needed — a road head seven hours from Kathmandu",
@@ -197,8 +188,6 @@ Three days up a steep forested gorge, then the valley opens out at Kyanjin Gompa
       ...record("regions", "mustang", 176),
       name: "Mustang",
       slug: "mustang",
-      shortDescription:
-        "A Tibetan kingdom in the rain shadow of the Annapurnas — red cliffs, walled towns and almost no rain.",
       description: `Mustang sits north of the Himalaya, not south of it, and that one fact explains everything about the place. The Annapurna and Dhaulagiri massifs take the monsoon out of the air before it arrives, so Mustang is a high desert of eroded red and ochre cliffs where the Kali Gandaki has cut the deepest gorge on earth.
 
 ## Upper Mustang
@@ -210,7 +199,6 @@ North of Kagbeni the district becomes restricted, and you need a special permit,
 The one region in Nepal you can trek through the monsoon. June to August is dry here and every other trail in the country is wet — it is the obvious answer to "where can I walk in July?"`,
       featuredImage: img("lo-manthang"),
       gallery: [img("mustang-trail"), img("muktinath-valley")],
-      country: "Nepal",
       elevationRange: "2,700–4,000 m",
       highlights: [
         "The walled city of Lo Manthang",
@@ -236,8 +224,6 @@ The one region in Nepal you can trek through the monsoon. June to August is dry 
       ...record("destinations", "everest-base-camp", 238),
       name: "Everest Base Camp",
       slug: "everest-base-camp",
-      shortDescription:
-        "The classic walk to the foot of the highest mountain on earth, through the heart of Sherpa country.",
       description: `Base Camp itself is a field of coloured tents on grey moraine at 5,364 metres, at the mouth of the Khumbu Icefall. It is not the prettiest place on the trek and almost nobody comes for the view from it — you come for the fortnight of walking that gets you there, and for the dawn from Kala Patthar the next morning, which is the finest view of Everest that does not require a rope.
 
 ## The route
@@ -279,8 +265,6 @@ Anyone who can walk six hours a day, several days running, and is content to do 
       ...record("destinations", "annapurna-sanctuary", 230),
       name: "Annapurna Sanctuary",
       slug: "annapurna-sanctuary",
-      shortDescription:
-        "A glacial amphitheatre ringed by peaks over 7,000 metres, reached in a week from Pokhara.",
       description: `The Sanctuary is a basin at 4,130 metres enclosed almost completely by mountains — Annapurna South, Hiunchuli, Machhapuchhre and the Annapurna massif itself stand around it in a near-circle. The only way in is a narrow gorge between Hiunchuli and Machhapuchhre, and walking through it into the open bowl is one of the great arrivals in trekking.
 
 ## Getting in
@@ -319,8 +303,6 @@ March and April for rhododendron in flower; October and November for the cleares
       ...record("destinations", "langtang-valley", 196),
       name: "Langtang Valley",
       slug: "langtang-valley",
-      shortDescription:
-        "Big mountains without a domestic flight — a nine-day valley walk that starts on a road out of Kathmandu.",
       description: `Langtang is the shortest route from Kathmandu to serious altitude. Seven hours of driving north to Syabrubesi, then three days up a forested gorge, and the valley opens out at Kyanjin Gompa beneath a 7,000-metre wall of ice.
 
 Because there is no flight, there is nothing to be weathered out of — the trek that is easiest to fit into a two-week holiday with a fixed flight home.
@@ -353,8 +335,6 @@ Kyanjin Gompa is where the trek earns its reputation. Two day-walks go up from i
       ...record("destinations", "upper-mustang", 174),
       name: "Upper Mustang",
       slug: "upper-mustang",
-      shortDescription:
-        "The restricted Tibetan kingdom of Lo — walled towns, cave monasteries and a desert that never sees the monsoon.",
       description: `North of Kagbeni the Kali Gandaki leaves the Himalaya behind and enters a landscape that belongs to the Tibetan plateau: ochre and grey cliffs, irrigated barley terraces, whitewashed villages under flat roofs stacked with firewood.
 
 ## Lo Manthang
@@ -390,8 +370,6 @@ Upper Mustang is a restricted area. You need a special permit on top of the ordi
       ...record("destinations", "kathmandu-valley", 220),
       name: "Kathmandu Valley",
       slug: "kathmandu-valley",
-      shortDescription:
-        "Seven UNESCO monument zones inside twenty kilometres — the densest concentration of heritage in the Himalaya.",
       description: `Almost every trip to Nepal begins and ends here, and the valley repays the days at either end. Three cities — Kathmandu, Patan and Bhaktapur — were separate kingdoms until the eighteenth century and each kept its own durbar square, its own palace and its own generation of Newar architecture.
 
 ## What to see first
@@ -433,8 +411,6 @@ Traffic is slow and the air in spring is poor. Plan two sights a day, not five, 
       ...record("destinations", "pokhara", 214),
       name: "Pokhara",
       slug: "pokhara",
-      shortDescription:
-        "A lakeside town under the Annapurnas, and the start of every trek in western Nepal.",
       description: `Pokhara is where trekkers land before an Annapurna trip and where they collapse afterwards. It sits at 820 metres on the shore of Phewa Lake, and on a clear morning Machhapuchhre stands over it at close to 7,000 metres — one of the shortest horizontal distances from lake to high peak anywhere in the world.
 
 ## Worth a day at each end
@@ -631,8 +607,6 @@ Twenty-five minutes by air from Kathmandu, or six to seven hours by road along t
       ...record("tours", "everest-base-camp-trek", 234),
       name: "Everest Base Camp Trek",
       slug: "everest-base-camp-trek",
-      shortDescription:
-        "Fourteen days to the foot of Everest through Namche, Tengboche and the Khumbu valley, with two acclimatisation days built in.",
       description: `The trek that everything else is measured against. Fourteen days, two of them spent deliberately going nowhere, walking from the airstrip at Lukla to Base Camp at 5,364 metres and up Kala Patthar for dawn.
 
 ## How we run it
@@ -667,7 +641,7 @@ Six to seven hours of walking a day on a good trail, at altitude, for eleven day
       groupSizeMin: 2,
       groupSizeMax: 12,
       maxAltitude: 5545,
-      destinationId: idFor("destinations", "everest-base-camp"),
+      destinationIds: [idFor("destinations", "everest-base-camp")],
       activityIds: [idFor("activities", "teahouse-trekking")],
       itinerary: days("everest-base-camp-trek", [
         {
@@ -866,8 +840,6 @@ Six to seven hours of walking a day on a good trail, at altitude, for eleven day
       ...record("tours", "annapurna-base-camp-trek", 226),
       name: "Annapurna Base Camp Trek",
       slug: "annapurna-base-camp-trek",
-      shortDescription:
-        "Eleven days from Pokhara into the Annapurna Sanctuary — farmland to glacier, with hot springs on the way out.",
       description: `The most varied week of walking in Nepal. You start among rice terraces at 1,000 metres, climb through rhododendron and bamboo, and finish on moraine at 4,130 metres inside a ring of 7,000-metre peaks with no way out but the way you came in.
 
 ## Why eleven days
@@ -900,7 +872,7 @@ Less altitude than Everest, more stairs. The stone staircases between Chhomrong 
       groupSizeMin: 2,
       groupSizeMax: 14,
       maxAltitude: 4130,
-      destinationId: idFor("destinations", "annapurna-sanctuary"),
+      destinationIds: [idFor("destinations", "annapurna-sanctuary")],
       activityIds: [idFor("activities", "teahouse-trekking")],
       itinerary: days("annapurna-base-camp-trek", [
         {
@@ -1058,8 +1030,6 @@ Less altitude than Everest, more stairs. The stone staircases between Chhomrong 
       ...record("tours", "langtang-valley-trek", 194),
       name: "Langtang Valley Trek",
       slug: "langtang-valley-trek",
-      shortDescription:
-        "Nine days to Kyanjin Gompa and back, entirely by road from Kathmandu — no domestic flight to be weathered out of.",
       description: `The short Himalayan trek. Nine days door to door, no internal flight, and by day four you are at 3,870 metres beneath a wall of ice with 5,000-metre viewpoints on either side.
 
 ## Going back to Langtang
@@ -1087,7 +1057,7 @@ The drive to Syabrubesi is seven hours on a rough road and it is the least pleas
       groupSizeMin: 2,
       groupSizeMax: 12,
       maxAltitude: 4984,
-      destinationId: idFor("destinations", "langtang-valley"),
+      destinationIds: [idFor("destinations", "langtang-valley")],
       activityIds: [idFor("activities", "teahouse-trekking")],
       itinerary: days("langtang-valley-trek", [
         {
@@ -1223,8 +1193,6 @@ The drive to Syabrubesi is seven hours on a rough road and it is the least pleas
       ...record("tours", "upper-mustang-trek", 172),
       name: "Upper Mustang Trek",
       slug: "upper-mustang-trek",
-      shortDescription:
-        "Fourteen days into the restricted kingdom of Lo, to the walled capital at Lo Manthang. Trekkable through the monsoon.",
       description: `Behind the Annapurnas, in their rain shadow, is a Tibetan Buddhist kingdom that stayed closed to outsiders until 1992. Upper Mustang is red rock, barley terraces, cave dwellings and a walled capital with three fifteenth-century monasteries in it.
 
 ## The permit
@@ -1252,7 +1220,7 @@ The Himalaya takes the rain out of the air before it gets this far north. June t
       groupSizeMin: 2,
       groupSizeMax: 10,
       maxAltitude: 4010,
-      destinationId: idFor("destinations", "upper-mustang"),
+      destinationIds: [idFor("destinations", "upper-mustang")],
       activityIds: [
         idFor("activities", "teahouse-trekking"),
         idFor("activities", "cultural-tours"),
@@ -1440,8 +1408,6 @@ The Himalaya takes the rain out of the air before it gets this far north. June t
       ...record("tours", "island-peak-climb", 168),
       name: "Island Peak Climb",
       slug: "island-peak-climb",
-      shortDescription:
-        "Sixteen days in the Khumbu ending on the summit of Imja Tse at 6,189 metres — a first Himalayan peak.",
       description: `Island Peak is the mountain most people climb first in Nepal. It is a trekking peak, which means no previous expedition experience is required, but it is emphatically a climb: crampons, a harness, a fixed rope on the headwall and a crevassed glacier to cross before it.
 
 ## The shape of the trip
@@ -1474,7 +1440,7 @@ You should be a competent hill walker, comfortable with exposure, and fit enough
       groupSizeMin: 2,
       groupSizeMax: 8,
       maxAltitude: 6189,
-      destinationId: idFor("destinations", "everest-base-camp"),
+      destinationIds: [idFor("destinations", "everest-base-camp")],
       activityIds: [
         idFor("activities", "peak-climbing"),
         idFor("activities", "teahouse-trekking"),
@@ -1671,8 +1637,6 @@ You should be a competent hill walker, comfortable with exposure, and fit enough
       ...record("tours", "kathmandu-pokhara-chitwan", 206),
       name: "Kathmandu, Pokhara and Chitwan",
       slug: "kathmandu-pokhara-chitwan",
-      shortDescription:
-        "Eight days of temples, lakes and jungle with no trekking at all — Nepal at low altitude.",
       description: `Not everyone comes to Nepal to walk uphill. This is the classic circuit: the heritage of the Kathmandu valley, a lake under the Annapurnas, and two nights in the lowland jungle looking for rhinoceros.
 
 Nothing here goes above 1,400 metres, nothing involves more than a gentle walk, and it works as well for families and for people with a week as it does for anyone who wants the country without the altitude.`,
@@ -1699,7 +1663,7 @@ Nothing here goes above 1,400 metres, nothing involves more than a gentle walk, 
       groupSizeMin: 2,
       groupSizeMax: 16,
       maxAltitude: 1400,
-      destinationId: idFor("destinations", "kathmandu-valley"),
+      destinationIds: [idFor("destinations", "kathmandu-valley")],
       activityIds: [
         idFor("activities", "cultural-tours"),
         idFor("activities", "jungle-safari"),

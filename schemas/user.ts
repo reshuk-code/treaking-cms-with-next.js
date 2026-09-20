@@ -1,10 +1,15 @@
 import { z } from "zod";
 
-import { ROLES } from "@/types/user";
+import { STAFF_ROLES } from "@/types/user";
 
 import { optionalUrl } from "./common";
 
-export const roleSchema = z.enum(ROLES);
+/**
+ * Staff roles only. The admin's user screens parse their input with this, so
+ * a hand-posted `role=traveller` cannot file a customer among the operators —
+ * or, worse, move an existing traveller's record into a staff role.
+ */
+export const roleSchema = z.enum(STAFF_ROLES);
 
 /**
  * Password policy. Deliberately modest: a long minimum beats an unmemorable

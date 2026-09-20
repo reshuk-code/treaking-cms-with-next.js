@@ -1,7 +1,7 @@
 import "server-only";
 
 import { users } from "@/lib/cms/repositories/users";
-import type { CmsUser } from "@/types/user";
+import { isStaffRole, type CmsUser } from "@/types/user";
 
 /**
  * Maps a verified external identity onto a CMS user.
@@ -26,6 +26,13 @@ import type { CmsUser } from "@/types/user";
  *    first; the provider then just proves they are who they say.
  *
  * 4. A deactivated CMS user is refused regardless of what the provider says.
+ *
+ * 5. A traveller is refused. Travellers share the `users` collection with
+ *    staff, so a customer who happens to hold an account with the client's
+ *    identity provider would otherwise match at step 1 and be handed an admin
+ *    session. It would be a powerless one — the role grants nothing — but
+ *    "signed in, then bounced" is not an answer, and the rule belongs here
+ *    where every provider passes through it rather than in each sign-in page.
  */
 export interface ExternalIdentity {
   email: string;
@@ -44,6 +51,7 @@ export async function linkExternalIdentity(
 
   if (existing) {
     if (!existing.active) return { ok: false, reason: "deactivated" };
+    if (!isStaffRole(existing.role)) return { ok: false, reason: "not_invited" };
     return { ok: true, user: existing };
   }
 

@@ -27,6 +27,7 @@ export const COLLECTIONS = [
   "destinations",
   "regions",
   "tours",
+  "tour_categories",
   "activities",
   "testimonials",
   "faqs",

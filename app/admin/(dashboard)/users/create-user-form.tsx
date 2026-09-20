@@ -11,7 +11,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field, Input, Select } from "@/components/ui/field";
 import { IDLE } from "@/lib/actions/result";
 import { ROLE_DESCRIPTIONS, ROLE_LABELS } from "@/lib/auth/permissions";
-import { ROLES } from "@/types/user";
+import { STAFF_ROLES } from "@/types/user";
 
 export function CreateUserForm({
   canAssignSuperAdmin,
@@ -89,7 +89,7 @@ export function CreateUserForm({
             >
               {(props) => (
                 <Select {...props} name="role" defaultValue="editor">
-                  {ROLES.filter(
+                  {STAFF_ROLES.filter(
                     (role) => canAssignSuperAdmin || role !== "super_admin",
                   ).map((role) => (
                     <option key={role} value={role}>

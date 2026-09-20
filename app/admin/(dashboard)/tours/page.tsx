@@ -196,8 +196,14 @@ export default async function ToursListPage({
                   </TD>
 
                   <TD className="hidden text-xs text-muted-foreground sm:table-cell">
-                    {tour.destinationId
-                      ? (destinationNames.get(tour.destinationId) ?? "Deleted destination")
+                    {tour.destinationIds.length
+                      ? tour.destinationIds
+                          .map(
+                            (destinationId) =>
+                              destinationNames.get(destinationId) ??
+                              "Deleted destination",
+                          )
+                          .join(", ")
                       : "—"}
                   </TD>
 

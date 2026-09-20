@@ -15,8 +15,8 @@ const STATUS_LABELS: Record<string, string> = {
   trash: "Trash",
 };
 
-/** Search, status, country and featured filters for the regions list. */
-export function RegionFilters({ countries }: { countries: string[] }) {
+/** Search, status and featured filters for the regions list. */
+export function RegionFilters() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -58,7 +58,7 @@ export function RegionFilters({ countries }: { countries: string[] }) {
         <Input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search by name or country…"
+          placeholder="Search by name…"
           className="pl-8"
           aria-label="Search regions"
         />
@@ -73,20 +73,6 @@ export function RegionFilters({ countries }: { countries: string[] }) {
         {["any", ...CONTENT_STATUSES].map((status) => (
           <option key={status} value={status}>
             {STATUS_LABELS[status]}
-          </option>
-        ))}
-      </Select>
-
-      <Select
-        value={searchParams.get("country") ?? ""}
-        onChange={(event) => setParam("country", event.target.value)}
-        aria-label="Filter by country"
-        className="w-40"
-      >
-        <option value="">All countries</option>
-        {countries.map((name) => (
-          <option key={name} value={name}>
-            {name}
           </option>
         ))}
       </Select>

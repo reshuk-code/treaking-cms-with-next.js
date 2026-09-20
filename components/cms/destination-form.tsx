@@ -19,13 +19,12 @@ import {
   Input,
   Label,
   Select,
-  Textarea,
 } from "@/components/ui/field";
 import { useFormFeedback } from "@/hooks/use-form-feedback";
 import { IDLE } from "@/lib/actions/result";
-import { richListContentToValue } from "@/lib/rich-text";
+import { defaultNewStatus } from "@/lib/publishing";
+import { richTextExcerpt } from "@/lib/rich-text";
 import { toDateTimeLocal } from "@/lib/utils";
-import { MONTHS } from "@/schemas/destination";
 import { slugify } from "@/schemas/common";
 import type { Destination } from "@/types/content";
 
@@ -36,9 +35,7 @@ import type { Destination } from "@/types/content";
  * feeds it to an IntersectionObserver effect.
  */
 const SECTIONS = [
-  { id: "section-facts", label: "Facts" },
   { id: "section-description", label: "Overview" },
-  { id: "section-highlights", label: "Highlights" },
   { id: "section-images", label: "Images" },
   { id: "section-faqs", label: "FAQs" },
   { id: "section-seo", label: "SEO" },
@@ -46,17 +43,13 @@ const SECTIONS = [
 
 /** One tab per section. See the note in `tour-form.tsx`. */
 const CONTENT_TABS = [
-  { id: "facts", label: "Facts", sectionIds: ["section-facts"] },
   { id: "overview", label: "Overview", sectionIds: ["section-description"] },
-  { id: "highlights", label: "Highlights", sectionIds: ["section-highlights"] },
   { id: "images", label: "Images", sectionIds: ["section-images"] },
   { id: "faqs", label: "FAQs", sectionIds: ["section-faqs"] },
 ];
 
 export interface DestinationFormProps {
   destination: Destination | null;
-  /** Countries already in use, offered as suggestions. */
-  countryOptions: string[];
   siteUrl: string;
   /** Where the frontend mounts destinations. For the slug hint only. */
   basePath?: string;
@@ -66,14 +59,12 @@ export interface DestinationFormProps {
 /**
  * The destination editor.
  *
- * Longer than the post editor because a destination carries the facts a
- * traveller asks about — where it is, when to go, how long people stay — and
- * those belong in structured fields rather than buried in prose, so the
- * frontend can render them as a spec table and a map.
+ * A destination is a country — Nepal, India, Bhutan — so it carries no
+ * country, region or map pin of its own. Regions point at it instead, and the
+ * where-and-when facts belong to the regions and tours that sell trips there.
  */
 export function DestinationForm({
   destination,
-  countryOptions,
   siteUrl,
   basePath = "/destinations",
   canPublish,
@@ -89,26 +80,14 @@ export function DestinationForm({
     destination?.slug ?? null,
   );
   const slug = slugOverride ?? (name ? slugify(name) : "");
-  const [shortDescription, setShortDescription] = useState(
-    destination?.shortDescription ?? "",
-  );
   // Mirrored out of the editors so the SEO panel grades what is on
   // screen rather than what was last saved.
   const [seoContent, setSeoContent] = useState(destination?.description ?? "");
   const [seoImage, setSeoImage] = useState(destination?.featuredImage ?? "");
 
-  const [status, setStatus] = useState(destination?.status ?? "draft");
+  const [status, setStatus] = useState(destination?.status ?? defaultNewStatus(canPublish));
 
   const errors = state.fieldErrors ?? {};
-
-  // On a failed save React resets the form to its defaults, so the defaults
-  // have to become whatever was just submitted.
-  const season = new Set(
-    destination?.bestSeason ?? [],
-  );
-
-
-
 
   /**
    * Submitting by hand rather than through `<form action=...>`.
@@ -154,7 +133,7 @@ export function DestinationForm({
                     name="name"
                     value={name}
                     onChange={(event) => setName(event.target.value)}
-                    placeholder="Everest Base Camp"
+                    placeholder="Nepal"
                     className="text-base"
                     required
                   />
@@ -188,26 +167,9 @@ export function DestinationForm({
                         event.target.value ? slugify(event.target.value) : null,
                       )
                     }
-                    placeholder="everest-base-camp"
+                    placeholder="nepal"
                     className="font-mono text-xs"
                     required
-                  />
-                )}
-              </Field>
-
-              <Field
-                id="shortDescription"
-                label="Short description"
-                error={errors.shortDescription?.[0]}
-                hint="One or two lines for cards and listings."
-              >
-                {(props) => (
-                  <Textarea
-                    {...props}
-                    name="shortDescription"
-                    value={shortDescription}
-                    onChange={(event) => setShortDescription(event.target.value)}
-                    rows={2}
                   />
                 )}
               </Field>
@@ -215,113 +177,6 @@ export function DestinationForm({
           </Card>
 
           <ContentManagementPanel>
-
-          <FormSection id="section-facts" title="Facts" bodyClassName="space-y-5">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field
-                  id="country"
-                  label="Country"
-                  error={errors.country?.[0]}
-                >
-                  {(props) => (
-                    <>
-                      <Input
-                        {...props}
-                        name="country"
-                        defaultValue={destination?.country ?? ""}
-                        list="destination-countries"
-                        placeholder="Nepal"
-                      />
-                      <datalist id="destination-countries">
-                        {countryOptions.map((option) => (
-                          <option key={option} value={option} />
-                        ))}
-                      </datalist>
-                    </>
-                  )}
-                </Field>
-
-                <Field
-                  id="region"
-                  label="Region"
-                  error={errors.region?.[0]}
-                >
-                  {(props) => (
-                    <Input
-                      {...props}
-                      name="region"
-                      defaultValue={destination?.region ?? ""}
-                      placeholder="Khumbu"
-                    />
-                  )}
-                </Field>
-
-                <Field
-                  id="latitude"
-                  label="Latitude"
-                  error={errors.latitude?.[0]}
-                >
-                  {(props) => (
-                    <Input
-                      {...props}
-                      name="latitude"
-                      defaultValue={destination?.latitude ?? ""}
-                      placeholder="27.9881"
-                      inputMode="decimal"
-                    />
-                  )}
-                </Field>
-
-                <Field
-                  id="longitude"
-                  label="Longitude"
-                  error={errors.longitude?.[0]}
-                >
-                  {(props) => (
-                    <Input
-                      {...props}
-                      name="longitude"
-                      defaultValue={destination?.longitude ?? ""}
-                      placeholder="86.9250"
-                      inputMode="decimal"
-                    />
-                  )}
-                </Field>
-              </div>
-
-              <Field
-                id="typicalDuration"
-                label="Typical duration"
-                error={errors.typicalDuration?.[0]}
-              >
-                {(props) => (
-                  <Input
-                    {...props}
-                    name="typicalDuration"
-                    defaultValue={destination?.typicalDuration ?? ""}
-                    placeholder="12–14 days"
-                  />
-                )}
-              </Field>
-
-              <fieldset className="space-y-2">
-                <legend className="text-sm font-medium text-foreground">
-                  Best season
-                </legend>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-4">
-                  {MONTHS.map((month) => (
-                    <CheckboxField
-                      key={month}
-                      id={`bestSeason-${month}`}
-                      name="bestSeason"
-                      value={month}
-                      label={month}
-                      defaultChecked={season.has(month)}
-                    />
-                  ))}
-                </div>
-              </fieldset>
-          </FormSection>
 
           <FormSection id="section-description" title="Overview">
               <RichTextField
@@ -333,17 +188,6 @@ export function DestinationForm({
                 error={errors.description?.[0]}
                 onValueChange={setSeoContent}
               />
-          </FormSection>
-
-          <FormSection id="section-highlights" title="Highlights">
-            <RichTextField
-              id="highlights"
-              name="highlights"
-              label="Highlights"
-              hideLabel
-              defaultValue={richListContentToValue(destination?.highlights)}
-              error={errors.highlights?.[0]}
-            />
           </FormSection>
 
           <FormSection id="section-images" title="Images">
@@ -364,7 +208,7 @@ export function DestinationForm({
             id="section-seo"
             seo={destination?.seo ?? null}
             fallbackTitle={name}
-            fallbackDescription={shortDescription}
+            fallbackDescription={richTextExcerpt(seoContent, { maxChars: 160 })}
             slug={`${basePath}/${slug}`}
             siteUrl={siteUrl}
             errors={errors}
@@ -420,13 +264,17 @@ export function DestinationForm({
                 </p>
               ) : null}
 
-              {status === "scheduled" ? (
+              {status === "published" || status === "scheduled" ? (
                 <Field
                   id="publishedAt"
-                  label="Publish at"
+                  label={status === "scheduled" ? "Publish at" : "Published on"}
                   error={errors.publishedAt?.[0]}
-                  hint="Goes live automatically once this time passes."
-                  required
+                  hint={
+                    status === "scheduled"
+                      ? "Goes live automatically once this time passes."
+                      : "Back-date or post-date it. Leave blank to stamp it now."
+                  }
+                  required={status === "scheduled"}
                 >
                   {(props) => (
                     <Input
@@ -488,8 +336,7 @@ export function DestinationForm({
               <div className="space-y-1.5">
                 <Label>Used by</Label>
                 <p className="text-xs text-muted-foreground">
-                  Tour packages and activities will reference this destination
-                  once those modules land.
+                  Regions and tour packages reference this destination.
                 </p>
               </div>
             </CardBody>

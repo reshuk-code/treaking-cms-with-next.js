@@ -19,7 +19,8 @@ do $$
 declare
   collection text;
   collections text[] := array[
-    'pages', 'posts', 'destinations', 'regions', 'tours', 'activities',
+    'pages', 'posts', 'destinations', 'regions', 'tours', 'tour_categories',
+    'activities',
     'testimonials', 'faqs', 'media', 'menus', 'redirects',
     'users', 'enquiries', 'activity_log'
   ];
@@ -85,7 +86,8 @@ do $$
 declare
   collection text;
   collections text[] := array[
-    'pages', 'posts', 'destinations', 'regions', 'tours', 'activities',
+    'pages', 'posts', 'destinations', 'regions', 'tours', 'tour_categories',
+    'activities',
     'testimonials', 'faqs', 'media', 'menus', 'redirects',
     'users', 'enquiries', 'activity_log', 'kv'
   ];

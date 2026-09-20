@@ -6,6 +6,7 @@ import type { ActivityInputParsed } from "@/schemas/activity";
 import { slugify } from "@/schemas/common";
 import type { ListOptions, Paginated } from "@/types/common";
 import type { Activity } from "@/types/content";
+import { EMPTY_SEO } from "@/types/seo";
 
 import {
   buildListQuery,
@@ -15,7 +16,7 @@ import {
 } from "./base";
 import type { WriteContext } from "./pages";
 
-const SEARCH_FIELDS = ["name", "slug", "description", "icon"];
+const SEARCH_FIELDS = ["name", "slug", "description"];
 
 /** Ceiling for the unpaginated scans. See the note on `media.folders()`. */
 const FACET_SCAN_LIMIT = 2000;
@@ -83,22 +84,6 @@ export const activities = {
     return store.count(buildListQuery(options, SEARCH_FIELDS));
   },
 
-  /** Icon names in use, for the editor's datalist. */
-  async icons(): Promise<string[]> {
-    const store = await collection();
-    const all = await store.findMany({
-      where: [{ field: "status", op: "ne", value: "trash" }],
-      limit: FACET_SCAN_LIMIT,
-    });
-
-    const names = new Set<string>();
-    for (const record of all) {
-      if (record.icon) names.add(record.icon);
-    }
-
-    return [...names].sort((a, b) => a.localeCompare(b));
-  },
-
   /** Minimal projection, for the activity picker in the tour editor. */
   async options(): Promise<{ id: string; name: string; slug: string }[]> {
     const store = await collection();
@@ -132,6 +117,42 @@ export const activities = {
     return ids
       .map((id) => byId.get(id))
       .filter((record): record is Activity => record !== undefined);
+  },
+
+  /**
+   * Creates an activity from the tour editor's inline control.
+   *
+   * Name and slug only, pinned to `draft`: see the note on
+   * `tourCategories.quickCreate`. An existing slug is returned as-is rather
+   * than raising a conflict.
+   */
+  async quickCreate(
+    input: { name: string; slug: string },
+    ctx: WriteContext,
+  ): Promise<Activity> {
+    const store = await collection();
+
+    const existing = await store.findOne({
+      where: [{ field: "slug", op: "eq", value: input.slug }],
+    });
+    if (existing) return existing;
+
+    return store.create({
+      name: input.name,
+      slug: input.slug,
+      description: "",
+      featuredImage: "",
+      featuredImageHorizontal: "",
+      featuredImageVertical: "",
+      bannerImage: "",
+      gallery: [],
+      faqs: [],
+      order: 0,
+      status: "draft",
+      publishedAt: null,
+      seo: EMPTY_SEO,
+      updatedBy: ctx.userId,
+    });
   },
 
   async create(
@@ -224,7 +245,6 @@ function fields(input: ActivityInputParsed) {
     name: input.name,
     slug: input.slug,
     description: input.description,
-    icon: input.icon,
     featuredImage: input.featuredImage,
     featuredImageHorizontal: input.featuredImageHorizontal,
     featuredImageVertical: input.featuredImageVertical,

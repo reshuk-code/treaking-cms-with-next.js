@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { cms } from "@/lib/cms";
 import { generateCmsMetadata } from "@/lib/seo/metadata";
+import { richTextExcerpt } from "@/lib/rich-text";
 
 import { FeaturedImage } from "@/components/frontend/featured-image";
 /**
@@ -30,18 +31,10 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function DestinationsIndexPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = await searchParams;
-  const selected = typeof params.country === "string" ? params.country : "";
-
-  const [managed, destinations, countries] = await Promise.all([
+export default async function DestinationsIndexPage() {
+  const [managed, destinations] = await Promise.all([
     cms.pages.getBySlug("/destinations"),
-    cms.destinations.getPublished(selected ? { country: selected } : undefined),
-    cms.destinations.countries(),
+    cms.destinations.getPublished(),
   ]);
 
   return (
@@ -59,29 +52,16 @@ export default async function DestinationsIndexPage({
         </p>
       </header>
 
-      {countries.length > 1 ? (
-        <nav aria-label="Countries" className="mt-10 flex flex-wrap gap-2">
-          <FilterChip href="/destinations" active={!selected} label="All" />
-          {countries.map((country) => (
-            <FilterChip
-              key={country}
-              href={`/destinations?country=${encodeURIComponent(country)}`}
-              active={selected === country}
-              label={country}
-            />
-          ))}
-        </nav>
-      ) : null}
-
       {destinations.length === 0 ? (
         <p className="mt-16 rounded-card border border-dashed border-border px-6 py-16 text-center text-muted-foreground">
-          {selected
-            ? `No destinations in ${selected} yet.`
-            : "No destinations published yet. Add one in the admin."}
+          No destinations published yet. Add one in the admin.
         </p>
       ) : (
         <ul className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {destinations.map((destination) => (
+          {destinations.map((destination) => {
+            const blurb = richTextExcerpt(destination.description);
+
+            return (
             <li key={destination.id} className="group">
               <Link href={`/destinations/${destination.slug}`} className="block">
                 <FeaturedImage
@@ -94,49 +74,18 @@ export default async function DestinationsIndexPage({
                   <h2 className="text-lg font-semibold tracking-tight group-hover:underline underline-offset-4">
                     {destination.name}
                   </h2>
-                  {[destination.region, destination.country].filter(Boolean)
-                    .length > 0 ? (
-                    <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
-                      {[destination.region, destination.country]
-                        .filter(Boolean)
-                        .join(", ")}
-                    </p>
-                  ) : null}
-                  {destination.shortDescription ? (
-                    <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-                      {destination.shortDescription}
+                  {blurb ? (
+                    <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground sm:line-clamp-4">
+                      {blurb}
                     </p>
                   ) : null}
                 </div>
               </Link>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>
-  );
-}
-
-function FilterChip({
-  href,
-  label,
-  active,
-}: {
-  href: string;
-  label: string;
-  active: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "page" : undefined}
-      className={
-        active
-          ? "rounded-full bg-foreground px-3.5 py-1.5 text-sm font-medium text-background"
-          : "rounded-full border border-border px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
-      }
-    >
-      {label}
-    </Link>
   );
 }

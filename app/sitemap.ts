@@ -10,7 +10,9 @@ import { getCmsConfig } from "@/lib/cms/config";
  * Declared routes are included because the CMS otherwise has no way to know
  * `/tours` exists — which is exactly what the route registry is for (§6).
  * Routes with dynamic segments are skipped: only the owning code knows what
- * the valid values are, so it should add them itself.
+ * the valid values are, so it should add them itself. So are routes marked
+ * `noSitemap`, which are declared for the admin inventory but are not pages
+ * to hand a search engine — the traveller account area is the example.
  */
 export const revalidate = 3600;
 
@@ -35,7 +37,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
   const developerEntries: MetadataRoute.Sitemap = developerRoutes
-    .filter((route) => !route.path.includes(":") && !cmsSlugs.has(route.path))
+    .filter(
+      (route) =>
+        !route.path.includes(":") &&
+        !route.noSitemap &&
+        !cmsSlugs.has(route.path),
+    )
     .map((route) => ({
       url: `${origin}${route.path === "/" ? "/" : `${route.path}/`}`,
     }));

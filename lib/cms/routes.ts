@@ -37,6 +37,16 @@ export interface DeveloperRoute {
   cmsMetadata?: boolean;
   /** Short note for the team, shown in the inventory. */
   description?: string;
+  /**
+   * Keep this route out of the generated sitemap.
+   *
+   * Declaring a route and publishing it are two different claims. The account
+   * area has to be declared — the admin route inventory is meant to answer
+   * "who owns this URL?", and a blank there is how a client ends up with a
+   * page nobody appears to own — but a sign-in form is not a page to submit
+   * to a search engine, and `/account` is private to whoever is reading it.
+   */
+  noSitemap?: boolean;
 }
 
 export interface RouteEntry {

@@ -98,21 +98,17 @@ export interface Post extends ContentRecord {
  * A region a company sells trips in — Everest, Annapurna, Mustang.
  *
  * A content type rather than a taxonomy: a region earns its own page with
- * photographs and prose, which a string on a destination cannot carry. The
- * free-text `region` on Destination is deliberately left alone; linking the two
- * would rewrite a field that eight display sites already read.
+ * photographs and prose, which a string on a destination cannot carry.
+ *
+ * A region does not name the destination it sits in. Tours carry both
+ * `destinationIds` and `regionIds`, so the association a visitor can actually
+ * see is already on the tour; a second copy here only had to be kept in sync.
  */
 export interface Region extends ContentRecord, FeaturedImageSet {
   name: string;
   slug: string;
-  shortDescription: string | null;
   description: string;
-  country: string | null;
-  /** Free text, e.g. "2,800-5,400 m". Not a number: ranges are the norm. */
-  elevationRange: string | null;
-  highlights: RichListContent;
   faqs?: TourFaq[];
-  bestSeason: string[];
   featured: boolean;
   order: number;
   seo: SeoMeta;
@@ -123,17 +119,8 @@ export interface Region extends ContentRecord, FeaturedImageSet {
 export interface Destination extends ContentRecord, FeaturedImageSet {
   name: string;
   slug: string;
-  shortDescription: string | null;
   description: string;
-  country: string | null;
-  region: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  highlights: RichListContent;
   faqs?: TourFaq[];
-  bestSeason: string[];
-  /** Free text, e.g. "7-14 days". Tour packages carry precise durations. */
-  typicalDuration: string | null;
   featured: boolean;
   order: number;
   seo: SeoMeta;
@@ -145,8 +132,28 @@ export interface Activity extends ContentRecord, FeaturedImageSet {
   name: string;
   slug: string;
   description: string | null;
-  icon: string | null;
   faqs?: TourFaq[];
+  order: number;
+  seo: SeoMeta;
+}
+
+/* ------------------------------------------------------- trip categories */
+
+/**
+ * A commercial tier a trip is sold under — Luxury, VIP, Budget.
+ *
+ * A record rather than a string on the tour, unlike a blog category, because
+ * the operator curates this list: the set of tiers they sell is a decision,
+ * and a free-text field would accumulate "Luxury", "luxury" and "Lux" until
+ * the filter it feeds is useless. Shaped like `Activity` for the same reason
+ * — a label a tour is tagged with, carrying a slug and a publication
+ * lifecycle so it can earn a landing page later.
+ */
+export interface TourCategory extends ContentRecord, FeaturedImageSet {
+  name: string;
+  slug: string;
+  description: string | null;
+  featured: boolean;
   order: number;
   seo: SeoMeta;
 }
@@ -259,7 +266,6 @@ export interface TourPackage extends ContentRecord, FeaturedImageSet {
   tripInfo?: string;
   name: string;
   slug: string;
-  shortDescription: string | null;
   description: string;
   /** Minor units are not used; store the display price. */
   price: number | null;
@@ -279,8 +285,10 @@ export interface TourPackage extends ContentRecord, FeaturedImageSet {
   groupSizeMin: number | null;
   groupSizeMax: number | null;
   maxAltitude: number | null;
-  destinationId: ID | null;
+  destinationIds: ID[];
+  regionIds: ID[];
   activityIds: ID[];
+  categoryIds: ID[];
   itinerary: ItineraryDay[];
   inclusions: RichListContent;
   exclusions: RichListContent;

@@ -15,9 +15,9 @@ import {
 } from "./base";
 import type { WriteContext } from "./pages";
 
-const SEARCH_FIELDS = ["name", "slug", "shortDescription", "country", "region"];
+const SEARCH_FIELDS = ["name", "slug"];
 
-/** Ceiling for the country scan. See the note on `media.folders()`. */
+/** Ceiling for the picker scan. See the note on `media.folders()`. */
 const FACET_SCAN_LIMIT = 2000;
 
 async function collection() {
@@ -25,7 +25,6 @@ async function collection() {
 }
 
 export interface DestinationListOptions extends ListOptions {
-  country?: string;
   featured?: boolean;
 }
 
@@ -47,9 +46,6 @@ export const destinations = {
     const query = buildListQuery(options, SEARCH_FIELDS);
 
     const where: FilterCondition[] = [...(query.where ?? [])];
-    if (options?.country) {
-      where.push({ field: "country", op: "eq", value: options.country });
-    }
     if (options?.featured !== undefined) {
       where.push({ field: "featured", op: "eq", value: options.featured });
     }
@@ -91,9 +87,6 @@ export const destinations = {
     const store = await collection();
 
     const where: FilterCondition[] = [PUBLIC_STATUS_FILTER];
-    if (options?.country) {
-      where.push({ field: "country", op: "eq", value: options.country });
-    }
     if (options?.featured !== undefined) {
       where.push({ field: "featured", op: "eq", value: options.featured });
     }
@@ -119,23 +112,28 @@ export const destinations = {
     return store.count(buildListQuery(options, SEARCH_FIELDS));
   },
 
-  /** Countries in use, for the filter dropdown and the editor's datalist. */
-  async countries(): Promise<string[]> {
+  /** Minimal projection, for the pickers that tours and activities will use. */
+  /**
+   * Resolves the ids a tour stores, in the order the tour stores them.
+   *
+   * Stale ids are dropped rather than reported, for the same reason as
+   * `activities.byIds`: nothing rewrites a tour when a record is deleted.
+   */
+  async byIds(ids: string[]): Promise<Destination[]> {
+    if (ids.length === 0) return [];
+
     const store = await collection();
-    const all = await store.findMany({
-      where: [{ field: "status", op: "ne", value: "trash" }],
+    const found = await store.findMany({
+      where: [{ field: "id", op: "in", value: ids }],
       limit: FACET_SCAN_LIMIT,
     });
 
-    const names = new Set<string>();
-    for (const record of all) {
-      if (record.country) names.add(record.country);
-    }
-
-    return [...names].sort((a, b) => a.localeCompare(b));
+    const byId = new Map(found.map((record) => [record.id, record]));
+    return ids
+      .map((id) => byId.get(id))
+      .filter((record): record is Destination => record !== undefined);
   },
 
-  /** Minimal projection, for the pickers that tours and activities will use. */
   async options(): Promise<{ id: string; name: string; slug: string }[]> {
     const store = await collection();
     const all = await store.findMany({
@@ -237,21 +235,13 @@ function fields(input: DestinationInputParsed) {
   return {
     name: input.name,
     slug: input.slug,
-    shortDescription: input.shortDescription,
     description: input.description,
     featuredImage: input.featuredImage,
     featuredImageHorizontal: input.featuredImageHorizontal,
     featuredImageVertical: input.featuredImageVertical,
     bannerImage: input.bannerImage,
     gallery: input.gallery,
-    country: input.country,
-    region: input.region,
-    latitude: input.latitude,
-    longitude: input.longitude,
-    highlights: input.highlights,
     faqs: input.faqs,
-    bestSeason: input.bestSeason,
-    typicalDuration: input.typicalDuration,
     featured: input.featured,
     order: input.order,
     status: input.status,

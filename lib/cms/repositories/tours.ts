@@ -2,6 +2,7 @@ import "server-only";
 
 import { ConflictError, NotFoundError } from "@/lib/cms/errors";
 import { getDatabase } from "@/lib/database";
+import { applyFilters, applySort, paginate } from "@/lib/database/query";
 import { sortGroupTiers } from "@/lib/pricing";
 import { slugify } from "@/schemas/common";
 import type { TourInputParsed } from "@/schemas/tour";
@@ -16,11 +17,11 @@ import {
 } from "./base";
 import type { WriteContext } from "./pages";
 
-const SEARCH_FIELDS = ["name", "slug", "shortDescription"];
+const SEARCH_FIELDS = ["name", "slug"];
 
 
-/** Ceiling for the activity-usage scan. See the note on `media.folders()`. */
-const ACTIVITY_SCAN_LIMIT = 2000;
+/** Ceiling for the unpaginated tour scans. See the note on `media.folders()`. */
+const TOUR_SCAN_LIMIT = 2000;
 
 async function collection() {
   return (await getDatabase()).collection<TourPackage>("tours");
@@ -28,6 +29,7 @@ async function collection() {
 
 export interface TourListOptions extends ListOptions {
   destinationId?: string;
+  regionId?: string;
   difficulty?: TourDifficulty;
   featured?: boolean;
 }
@@ -41,11 +43,11 @@ export interface TourListOptions extends ListOptions {
  * structured field rather than prose, so a listing page can filter and sort on
  * it and a detail page can render a spec table.
  *
- * A tour references a destination by id and copies nothing from it, so renaming
- * a destination updates every tour at once. The price of that is a dangling
- * `destinationId` when a destination is deleted: resolve it with
- * `cms.destinations.get()` and handle null, because the CMS has no referential
- * integrity to lean on and will not pretend otherwise.
+ * A tour references destinations, regions and activities by id and copies
+ * nothing from them, so renaming one updates every tour at once. The price of
+ * that is a dangling id when the record is deleted: resolve them with
+ * `cms.destinations.get()` / `cms.regions.get()` and handle null, because the
+ * CMS has no referential integrity to lean on and will not pretend otherwise.
  */
 export const tours = {
   async list(options?: TourListOptions): Promise<Paginated<TourPackage>> {
@@ -53,13 +55,6 @@ export const tours = {
     const query = buildListQuery(options, SEARCH_FIELDS);
 
     const where: FilterCondition[] = [...(query.where ?? [])];
-    if (options?.destinationId) {
-      where.push({
-        field: "destinationId",
-        op: "eq",
-        value: options.destinationId,
-      });
-    }
     if (options?.difficulty) {
       where.push({ field: "difficulty", op: "eq", value: options.difficulty });
     }
@@ -67,7 +62,7 @@ export const tours = {
       where.push({ field: "featured", op: "eq", value: options.featured });
     }
 
-    return store.list({
+    const spec = {
       ...query,
       where: where.length ? where : undefined,
       sort: [
@@ -76,7 +71,28 @@ export const tours = {
           direction: options?.order ?? "desc",
         },
       ],
-    });
+    };
+
+    // Destination and region are arrays, and membership is the one filter the
+    // adapter contract cannot express identically everywhere: `contains` means
+    // "the array includes this" in the local engine and "substring" once it
+    // becomes SQL, where one id would also match a longer id containing it.
+    // Filtering here keeps it meaning exactly one thing on every backend, for
+    // the same reason posts.list filters tags in the repository.
+    const destinationId = options?.destinationId;
+    const regionId = options?.regionId;
+    if (destinationId || regionId) {
+      const all = await store.findMany({ limit: TOUR_SCAN_LIMIT });
+      const matching = applyFilters(all, spec).filter(
+        (tour) =>
+          (!destinationId ||
+            (tour.destinationIds ?? []).includes(destinationId)) &&
+          (!regionId || (tour.regionIds ?? []).includes(regionId)),
+      );
+      return paginate(applySort(matching, spec.sort), spec);
+    }
+
+    return store.list(spec);
   },
 
   async get(id: string): Promise<TourPackage | null> {
@@ -102,13 +118,6 @@ export const tours = {
     const store = await collection();
 
     const where: FilterCondition[] = [PUBLIC_STATUS_FILTER];
-    if (options?.destinationId) {
-      where.push({
-        field: "destinationId",
-        op: "eq",
-        value: options.destinationId,
-      });
-    }
     if (options?.difficulty) {
       where.push({ field: "difficulty", op: "eq", value: options.difficulty });
     }
@@ -123,7 +132,17 @@ export const tours = {
       ],
     });
 
-    const visible = candidates.filter((tour) => isPubliclyVisible(tour));
+    // Membership filtered here rather than pushed into `where`, for the reason
+    // spelled out in list() above.
+    const destinationId = options?.destinationId;
+    const regionId = options?.regionId;
+    const visible = candidates.filter(
+      (tour) =>
+        isPubliclyVisible(tour) &&
+        (!destinationId ||
+          (tour.destinationIds ?? []).includes(destinationId)) &&
+        (!regionId || (tour.regionIds ?? []).includes(regionId)),
+    );
     return options?.perPage ? visible.slice(0, options.perPage) : visible;
   },
 
@@ -138,6 +157,11 @@ export const tours = {
     limit?: number,
   ): Promise<TourPackage[]> {
     return this.getPublished({ destinationId, perPage: limit });
+  },
+
+  /** Published tours for one region — the region detail page. */
+  async getByRegion(regionId: string, limit?: number): Promise<TourPackage[]> {
+    return this.getPublished({ regionId, perPage: limit });
   },
 
   async count(options?: TourListOptions): Promise<number> {
@@ -158,12 +182,30 @@ export const tours = {
     const store = await collection();
     const all = await store.findMany({
       where: [{ field: "status", op: "ne", value: "trash" }],
-      limit: ACTIVITY_SCAN_LIMIT,
+      limit: TOUR_SCAN_LIMIT,
     });
 
     const usage: Record<string, number> = {};
     for (const tour of all) {
       for (const id of tour.activityIds ?? []) {
+        usage[id] = (usage[id] ?? 0) + 1;
+      }
+    }
+
+    return usage;
+  },
+
+  /** How many tours tag each category. Same contract as `activityUsage`. */
+  async categoryUsage(): Promise<Record<string, number>> {
+    const store = await collection();
+    const all = await store.findMany({
+      where: [{ field: "status", op: "ne", value: "trash" }],
+      limit: TOUR_SCAN_LIMIT,
+    });
+
+    const usage: Record<string, number> = {};
+    for (const tour of all) {
+      for (const id of tour.categoryIds ?? []) {
         usage[id] = (usage[id] ?? 0) + 1;
       }
     }
@@ -282,7 +324,6 @@ function fields(input: TourInputParsed) {
   return {
     name: input.name,
     slug: input.slug,
-    shortDescription: input.shortDescription,
     description: input.description,
     tripInfo: input.tripInfo,
     featuredImage: input.featuredImage,
@@ -303,8 +344,10 @@ function fields(input: TourInputParsed) {
     groupSizeMin: input.groupSizeMin,
     groupSizeMax: input.groupSizeMax,
     maxAltitude: input.maxAltitude,
-    destinationId: input.destinationId,
+    destinationIds: input.destinationIds,
+    regionIds: input.regionIds,
     activityIds: input.activityIds,
+    categoryIds: input.categoryIds,
     // Renumbered on save so the stored days always run consecutively, whatever
     // order the editor dragged them into. Position alone is not the day number:
     // an entry with `spanDays: 2` covers two, so the cursor advances by the

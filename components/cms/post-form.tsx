@@ -13,6 +13,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { useFormFeedback } from "@/hooks/use-form-feedback";
 import { IDLE } from "@/lib/actions/result";
+import { defaultNewStatus } from "@/lib/publishing";
 import { RICH_TEXT_BLOCK } from "@/lib/cms/blocks";
 import { slugify } from "@/schemas/common";
 import { toDateTimeLocal } from "@/lib/utils";
@@ -64,7 +65,7 @@ export function PostForm({
   const [seoContent, setSeoContent] = useState(post?.content ?? "");
   const [seoImage, setSeoImage] = useState(post?.featuredImage ?? "");
 
-  const [status, setStatus] = useState(post?.status ?? "draft");
+  const [status, setStatus] = useState(post?.status ?? defaultNewStatus(canPublish));
 
   const errors = state.fieldErrors ?? {};
 
@@ -236,13 +237,17 @@ export function PostForm({
                 </p>
               ) : null}
 
-              {status === "scheduled" ? (
+              {status === "published" || status === "scheduled" ? (
                 <Field
                   id="publishedAt"
-                  label="Publish at"
+                  label={status === "scheduled" ? "Publish at" : "Published on"}
                   error={errors.publishedAt?.[0]}
-                  hint="The post goes live automatically once this time passes."
-                  required
+                  hint={
+                    status === "scheduled"
+                      ? "The post goes live automatically once this time passes."
+                      : "Back-date or post-date it. Leave blank to stamp it now."
+                  }
+                  required={status === "scheduled"}
                 >
                   {(props) => (
                     <Input

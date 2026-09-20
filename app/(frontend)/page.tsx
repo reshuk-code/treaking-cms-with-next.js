@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { cms } from "@/lib/cms";
 import { generateCmsMetadata } from "@/lib/seo/metadata";
+import { richTextExcerpt } from "@/lib/rich-text";
 import { formatDate, pluralise } from "@/lib/utils";
 
 import { FeaturedImage } from "@/components/frontend/featured-image";
@@ -134,7 +135,10 @@ export default async function HomePage() {
           action={{ href: "/destinations", label: "All destinations" }}
         >
           <ul className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {destinations.map((destination) => (
+            {destinations.map((destination) => {
+              const blurb = richTextExcerpt(destination.description);
+
+              return (
               <li key={destination.id} className="group">
                 <Link
                   href={`/destinations/${destination.slug}`}
@@ -150,28 +154,16 @@ export default async function HomePage() {
                     <h3 className="text-lg font-semibold tracking-tight group-hover:underline underline-offset-4">
                       {destination.name}
                     </h3>
-                    {[destination.region, destination.country].filter(Boolean)
-                      .length > 0 ? (
-                      <p className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
-                        {[destination.region, destination.country]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    ) : null}
-                    {destination.shortDescription ? (
-                      <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-                        {destination.shortDescription}
-                      </p>
-                    ) : null}
-                    {destination.typicalDuration ? (
-                      <p className="mt-3 text-xs text-muted-foreground">
-                        Typically {destination.typicalDuration}
+                    {blurb ? (
+                      <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground sm:line-clamp-4">
+                        {blurb}
                       </p>
                     ) : null}
                   </div>
                 </Link>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </Section>
       ) : null}
@@ -185,7 +177,10 @@ export default async function HomePage() {
           muted
         >
           <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {tours.map((tour) => (
+            {tours.map((tour) => {
+              const blurb = richTextExcerpt(tour.description);
+
+              return (
               <li
                 key={tour.id}
                 className="flex flex-col rounded-card bg-card p-6 shadow-[var(--shadow-card)] dark:border dark:border-border"
@@ -199,9 +194,9 @@ export default async function HomePage() {
                   </Link>
                 </h3>
 
-                {tour.shortDescription ? (
-                  <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-                    {tour.shortDescription}
+                {blurb ? (
+                  <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-muted-foreground sm:line-clamp-4">
+                    {blurb}
                   </p>
                 ) : (
                   <div className="flex-1" />
@@ -247,7 +242,8 @@ export default async function HomePage() {
                   </p>
                 ) : null}
               </li>
-            ))}
+              );
+            })}
           </ul>
         </Section>
       ) : null}

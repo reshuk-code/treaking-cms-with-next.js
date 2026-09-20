@@ -12,7 +12,7 @@ import {
   ROLE_LABELS,
 } from "@/lib/auth/permissions";
 import { getEnabledModules } from "@/lib/cms/config";
-import { ROLES, type PermissionAction } from "@/types/user";
+import { STAFF_ROLES, type PermissionAction } from "@/types/user";
 
 export const metadata = { title: "Roles & permissions" };
 
@@ -40,7 +40,7 @@ export default async function RolesPage() {
 
       <div className="space-y-5">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {ROLES.map((role) => (
+          {STAFF_ROLES.map((role) => (
             <Card key={role}>
               <CardBody className="space-y-1.5">
                 <Badge tone={role === "super_admin" ? "info" : "neutral"}>
@@ -64,7 +64,7 @@ export default async function RolesPage() {
             <THead>
               <tr>
                 <TH>Module</TH>
-                {ROLES.map((role) => (
+                {STAFF_ROLES.map((role) => (
                   <TH key={role} className="text-center">
                     {ROLE_LABELS[role]}
                   </TH>
@@ -76,7 +76,7 @@ export default async function RolesPage() {
               {resources.map((resource) => (
                 <TR key={resource}>
                   <TD className="font-medium capitalize">{resource}</TD>
-                  {ROLES.map((role) => {
+                  {STAFF_ROLES.map((role) => {
                     const granted = ACTIONS.filter((action) =>
                       hasPermission({ role }, `${resource}.${action}`),
                     );

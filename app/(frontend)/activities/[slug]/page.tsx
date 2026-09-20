@@ -9,6 +9,7 @@ import { PreviewBanner } from "@/components/frontend/preview-banner";
 import { cms } from "@/lib/cms";
 import { EmbeddedFaqs } from "@/components/frontend/embedded-faqs";
 import { generateCmsMetadata } from "@/lib/seo/metadata";
+import { richTextExcerpt } from "@/lib/rich-text";
 import { pluralise } from "@/lib/utils";
 import type { Activity } from "@/types/content";
 
@@ -129,13 +130,9 @@ export default async function ActivityPage({
                     <h3 className="font-semibold leading-snug tracking-tight">
                       {tour.name}
                     </h3>
-                    {tour.shortDescription ? (
-                      <p className="mt-2 line-clamp-2 flex-1 text-sm leading-relaxed text-muted-foreground">
-                        {tour.shortDescription}
-                      </p>
-                    ) : (
-                      <div className="flex-1" />
-                    )}
+                    <p className="mt-2 line-clamp-2 flex-1 text-sm leading-relaxed text-muted-foreground sm:line-clamp-3">
+                      {richTextExcerpt(tour.description)}
+                    </p>
                     <p className="mt-3 text-xs text-muted-foreground">
                       {[
                         tour.durationDays ? pluralise(tour.durationDays, "day") : null,

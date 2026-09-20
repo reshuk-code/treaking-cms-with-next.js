@@ -10,6 +10,18 @@ import { buildListQuery } from "./base";
 
 const SEARCH_FIELDS = ["name", "email"];
 
+/**
+ * Travellers live in this collection too, so every staff-facing read excludes
+ * them explicitly. Left implicit, the admin's user list would fill up with the
+ * client's customers and `isFirstRun()` would stop offering the setup screen
+ * the moment a member of the public registered.
+ */
+const NOT_A_TRAVELLER = {
+  field: "role",
+  op: "ne",
+  value: "traveller",
+} as const;
+
 async function collection() {
   return (await getDatabase()).collection<StoredUser>("users");
 }
@@ -33,7 +45,18 @@ export const users = {
     const page = await store.list({
       ...buildListQuery(options, SEARCH_FIELDS),
       // Users have no editorial status; buildListQuery would filter on it.
-      where: undefined,
+      where: [NOT_A_TRAVELLER],
+    });
+
+    return { ...page, items: page.items.map(toPublicUser) };
+  },
+
+  /** Registered travellers, newest first. Never mixed into `list()`. */
+  async listTravellers(options?: ListOptions): Promise<Paginated<CmsUser>> {
+    const store = await collection();
+    const page = await store.list({
+      ...buildListQuery(options, SEARCH_FIELDS),
+      where: [{ field: "role", op: "eq", value: "traveller" }],
     });
 
     return { ...page, items: page.items.map(toPublicUser) };
@@ -59,11 +82,16 @@ export const users = {
     });
   },
 
+  /** Staff only. A traveller is not a user of the CMS. */
   async count(): Promise<number> {
-    return (await collection()).count();
+    return (await collection()).count({ where: [NOT_A_TRAVELLER] });
   },
 
-  /** True before the first user exists, which triggers the setup screen. */
+  /**
+   * True before the first *staff* user exists, which triggers the setup
+   * screen. Counting travellers here would let a stranger who registered on
+   * the public site close the door on an install that was never set up.
+   */
   async isFirstRun(): Promise<boolean> {
     return (await this.count()) === 0;
   },
@@ -75,6 +103,8 @@ export const users = {
     role: Role;
     active?: boolean;
     avatar?: string | null;
+    phone?: string | null;
+    country?: string | null;
   }): Promise<CmsUser> {
     const store = await collection();
     const email = input.email.trim().toLowerCase();
@@ -94,6 +124,8 @@ export const users = {
       active: input.active ?? true,
       lastLoginAt: null,
       extraPermissions: [],
+      phone: input.phone ?? null,
+      country: input.country ?? null,
       passwordHash: await hashPassword(input.password),
     });
 
@@ -113,6 +145,19 @@ export const users = {
     const store = await collection();
     const existing = await store.findById(id);
     if (!existing) throw new NotFoundError("User");
+
+    /*
+     * Staff and travellers share this collection, so a role patch is the one
+     * edit that could turn a member of the public into an editor. Crossing the
+     * line is refused here rather than in the users screen, because the screen
+     * is not the boundary and a second caller would not repeat the check.
+     */
+    if (patch.role && (patch.role === "traveller") !== (existing.role === "traveller")) {
+      throw new ConflictError(
+        "A traveller account cannot be turned into a staff account, or the reverse.",
+        "role",
+      );
+    }
 
     if (patch.email) {
       const email = patch.email.trim().toLowerCase();
@@ -165,6 +210,63 @@ export const users = {
     }
 
     return store.delete(id);
+  },
+
+  /**
+   * Registers a traveller from the public site.
+   *
+   * The role is fixed here and never read from the caller: registration is an
+   * unauthenticated endpoint, so a `role` that could be influenced from
+   * outside is the one mistake that turns this feature into a way in.
+   */
+  async register(input: {
+    email: string;
+    name: string;
+    password: string;
+    phone?: string | null;
+    country?: string | null;
+  }): Promise<CmsUser> {
+    return this.create({
+      email: input.email,
+      name: input.name,
+      password: input.password,
+      phone: input.phone ?? null,
+      country: input.country ?? null,
+      role: "traveller",
+    });
+  },
+
+  /** A traveller by id, or null for any other role. Ownership reads use this. */
+  async getTraveller(id: string): Promise<CmsUser | null> {
+    const user = await (await collection()).findById(id);
+    if (!user || user.role !== "traveller") return null;
+    return toPublicUser(user);
+  },
+
+  /**
+   * The fields a traveller may change about themselves.
+   *
+   * Email is not among them. Changing it is an identity change, and with no
+   * mailer in this template there is nothing to confirm the new address with —
+   * see docs/ROADMAP.md.
+   */
+  async updateProfile(
+    id: string,
+    patch: { name: string; phone: string | null; country: string | null },
+  ): Promise<CmsUser> {
+    const store = await collection();
+    const existing = await store.findById(id);
+    if (!existing || existing.role !== "traveller") {
+      throw new NotFoundError("Traveller");
+    }
+
+    const updated = await store.update(id, {
+      name: patch.name.trim(),
+      phone: patch.phone,
+      country: patch.country,
+    });
+    if (!updated) throw new NotFoundError("Traveller");
+    return toPublicUser(updated);
   },
 
   async countByRole(role: Role): Promise<number> {

@@ -15,7 +15,10 @@ import { parseFaqRows } from "@/lib/actions/faq-input";
 import { requirePermission } from "@/lib/auth";
 import { activities } from "@/lib/cms/repositories/activities";
 import { activity } from "@/lib/cms/repositories/activity";
-import { activityInputWithRulesSchema } from "@/schemas/activity";
+import {
+  activityInputWithRulesSchema,
+  quickActivitySchema,
+} from "@/schemas/activity";
 import type { ContentStatus } from "@/types/common";
 
 /** Activity server actions. `activity` here is the audit log, not the model. */
@@ -25,7 +28,6 @@ function parseFormData(formData: FormData) {
     name: formString(formData.get("name")),
     slug: formString(formData.get("slug")) || formString(formData.get("name")),
     description: formString(formData.get("description")),
-    icon: formString(formData.get("icon")),
     featuredImage: formString(formData.get("featuredImage")),
     featuredImageHorizontal: formString(formData.get("featuredImageHorizontal")),
     featuredImageVertical: formString(formData.get("featuredImageVertical")),
@@ -178,6 +180,48 @@ export async function duplicateActivityAction(id: string): Promise<ActionState> 
 
     revalidatePath("/admin/activities");
     return actionSuccess("Activity duplicated.", { id: copy.id });
+  } catch (error) {
+    return toActionState(error);
+  }
+}
+
+/**
+ * Creates an activity from the tour editor, without leaving it.
+ *
+ * Returns the record rather than revalidating the tour route: a revalidation
+ * here would re-render the editor around a half-filled trip and throw away
+ * everything typed so far. The caller adds the returned option to its own
+ * state instead.
+ */
+export async function quickCreateActivityAction(
+  name: string,
+  slug: string,
+): Promise<ActionState> {
+  try {
+    const session = await requirePermission("activities.create");
+
+    const parsed = quickActivitySchema.safeParse({ name, slug: slug || name });
+    if (!parsed.success) return toActionState(parsed.error);
+
+    const record = await activities.quickCreate(parsed.data, {
+      userId: session.userId,
+    });
+
+    await activity.record({
+      action: "created",
+      entityType: "activities",
+      entityId: record.id,
+      entityTitle: record.name,
+      userId: session.userId,
+      userName: session.name,
+    });
+
+    revalidatePath("/admin/activities");
+
+    return actionSuccess(`"${record.name}" added.`, {
+      id: record.id,
+      name: record.name,
+    });
   } catch (error) {
     return toActionState(error);
   }

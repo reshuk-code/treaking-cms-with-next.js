@@ -169,6 +169,39 @@ export function richDocToPlainText(doc: RichDoc): string {
   return parts.join("").replace(/\n{2,}/g, "\n").trim();
 }
 
+/**
+ * The opening words of stored rich text, as one plain paragraph.
+ *
+ * Cards and listings used to print a hand-written `shortDescription`. They now
+ * borrow the top of the overview instead, so there is one less field for an
+ * editor to keep in sync with the prose directly beneath it.
+ *
+ * The word cap is deliberately generous: how much of it a card *shows* is a
+ * `line-clamp` in the layout, which knows the column width. Trimming hard
+ * here would cut a different amount of text than the card has room for.
+ * `maxChars` exists for meta descriptions, where the budget really is
+ * characters and a search engine does the cutting if we do not.
+ */
+export function richTextExcerpt(
+  value: string | null | undefined,
+  options: { words?: number; maxChars?: number } = {},
+): string {
+  const { words = 50, maxChars } = options;
+
+  // Block boundaries arrive as newlines; a card is one paragraph.
+  const text = richDocToPlainText(toRichDoc(value)).replace(/\s+/g, " ").trim();
+  if (!text) return "";
+
+  let excerpt = text.split(" ").slice(0, words).join(" ");
+
+  if (maxChars && excerpt.length > maxChars) {
+    // Back off to a word boundary rather than slicing mid-word.
+    excerpt = excerpt.slice(0, maxChars).replace(/\s+\S*$/, "");
+  }
+
+  return excerpt.length < text.length ? `${excerpt}…` : excerpt;
+}
+
 /* --------------------------------------------------------------- Markdown */
 
 /**

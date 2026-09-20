@@ -10,6 +10,7 @@ import { pickImage } from "@/lib/images";
 import { isEmptyRichList } from "@/lib/rich-text";
 import { cms } from "@/lib/cms";
 import { generateCmsMetadata } from "@/lib/seo/metadata";
+import { richTextExcerpt } from "@/lib/rich-text";
 import { pluralise } from "@/lib/utils";
 import { GroupPriceCalculator } from "@/components/frontend/group-price-calculator";
 import { lowestPrice } from "@/lib/pricing";
@@ -46,7 +47,7 @@ export async function generateMetadata({
   return generateCmsMetadata({
     title: tour.name,
     path: `/tours/${tour.slug}`,
-    description: tour.shortDescription,
+    description: richTextExcerpt(tour.description, { maxChars: 160 }),
     image: pickImage(tour, "banner"),
     seo: tour.seo,
   });
@@ -66,11 +67,12 @@ export default async function TourPage({
 
   const { isEnabled: previewing } = await draftMode();
 
-  // The tour stores ids; resolve them to names. A destination or activity that
-  // has since been deleted simply drops out — the CMS has no referential
-  // integrity and this page does not pretend otherwise.
-  const [destination, activities, reviews] = await Promise.all([
-    tour.destinationId ? cms.destinations.get(tour.destinationId) : null,
+  // The tour stores ids; resolve them to names. A destination, region or
+  // activity that has since been deleted simply drops out — the CMS has no
+  // referential integrity and this page does not pretend otherwise.
+  const [destinations, regions, activities, reviews] = await Promise.all([
+    cms.destinations.byIds(tour.destinationIds),
+    cms.regions.byIds(tour.regionIds),
     cms.activities.byIds(tour.activityIds),
     cms.testimonials.getByTour(tour.id, 3),
   ]);
@@ -113,24 +115,23 @@ export default async function TourPage({
               </Link>
             </nav>
 
-            {destination ? (
-              <Link
-                href={`/destinations/${destination.slug}`}
-                className="text-xs font-medium uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground"
-              >
-                {destination.name}
-              </Link>
+            {destinations.length ? (
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                {destinations.map((destination) => (
+                  <Link
+                    key={destination.id}
+                    href={`/destinations/${destination.slug}`}
+                    className="text-xs font-medium uppercase tracking-[0.25em] text-muted-foreground hover:text-foreground"
+                  >
+                    {destination.name}
+                  </Link>
+                ))}
+              </div>
             ) : null}
 
             <h1 className="mt-3 max-w-3xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
               {tour.name}
             </h1>
-
-            {tour.shortDescription ? (
-              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-                {tour.shortDescription}
-              </p>
-            ) : null}
 
             {activities.length > 0 ? (
               <ul className="mt-7 flex flex-wrap gap-2">
@@ -366,17 +367,33 @@ export default async function TourPage({
                   </div>
                 ) : null}
 
-                {destination ? (
+                {destinations.length ? (
                   <div className="mt-6 border-t border-border pt-5">
                     <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                      Destination
+                      {destinations.length === 1 ? "Destination" : "Destinations"}
                     </p>
-                    <Link
-                      href={`/destinations/${destination.slug}`}
-                      className="mt-1.5 block text-sm underline-offset-4 hover:underline"
-                    >
-                      {destination.name}
-                    </Link>
+                    {destinations.map((destination) => (
+                      <Link
+                        key={destination.id}
+                        href={`/destinations/${destination.slug}`}
+                        className="mt-1.5 block text-sm underline-offset-4 hover:underline"
+                      >
+                        {destination.name}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+
+                {/* Regions have no public route yet, so they render as plain
+                    text rather than dead links. See docs/ROADMAP.md. */}
+                {regions.length ? (
+                  <div className="mt-6 border-t border-border pt-5">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                      {regions.length === 1 ? "Region" : "Regions"}
+                    </p>
+                    <p className="mt-1.5 text-sm">
+                      {regions.map((region) => region.name).join(", ")}
+                    </p>
                   </div>
                 ) : null}
               </div>

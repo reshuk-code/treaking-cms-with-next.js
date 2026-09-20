@@ -20,9 +20,8 @@ export default async function EditActivityPage({
   const session = await requirePermission("activities.update");
   const { id } = await params;
 
-  const [activity, icons, usage, siteUrl] = await Promise.all([
+  const [activity, usage, siteUrl] = await Promise.all([
     activities.get(id),
-    activities.icons(),
     tours.activityUsage(),
     settings.siteUrl(),
   ]);
@@ -43,7 +42,6 @@ export default async function EditActivityPage({
 
       <ActivityForm
         activity={activity}
-        iconOptions={icons}
         usedByTours={usage[activity.id] ?? 0}
         siteUrl={siteUrl}
         canPublish={hasPermission({ role: session.role }, "activities.publish")}

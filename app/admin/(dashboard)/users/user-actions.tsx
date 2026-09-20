@@ -22,7 +22,7 @@ import {
 import { CheckboxField, Field, Input, Select } from "@/components/ui/field";
 import { IDLE, type ActionState } from "@/lib/actions/result";
 import { ROLE_DESCRIPTIONS, ROLE_LABELS } from "@/lib/auth/permissions";
-import { ROLES, type CmsUser } from "@/types/user";
+import { STAFF_ROLES, type CmsUser } from "@/types/user";
 
 export function UserActions({
   user,
@@ -153,7 +153,7 @@ function EditUserDialog({
                 defaultValue={user.role}
                 disabled={!canChangeRole || isSelf}
               >
-                {ROLES.map((role) => (
+                {STAFF_ROLES.map((role) => (
                   <option key={role} value={role}>
                     {ROLE_LABELS[role]}
                   </option>

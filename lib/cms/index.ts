@@ -13,6 +13,7 @@ import { redirects } from "./repositories/redirects";
 import { regions } from "./repositories/regions";
 import { settings } from "./repositories/settings";
 import { testimonials } from "./repositories/testimonials";
+import { tourCategories } from "./repositories/tour-categories";
 import { tours } from "./repositories/tours";
 import { users } from "./repositories/users";
 import { seo } from "./seo";
@@ -49,6 +50,7 @@ export const cms = {
   destinations,
   regions,
   tours,
+  tourCategories,
   activities,
   testimonials,
   faqs,

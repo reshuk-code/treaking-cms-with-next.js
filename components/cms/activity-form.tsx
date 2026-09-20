@@ -17,6 +17,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field, Input, Label, Select } from "@/components/ui/field";
 import { useFormFeedback } from "@/hooks/use-form-feedback";
 import { IDLE } from "@/lib/actions/result";
+import { defaultNewStatus } from "@/lib/publishing";
 import { toDateTimeLocal } from "@/lib/utils";
 import { slugify } from "@/schemas/common";
 import type { Activity } from "@/types/content";
@@ -24,14 +25,12 @@ import type { Activity } from "@/types/content";
 /** One tab per section. See the note in `tour-form.tsx`. */
 const CONTENT_TABS = [
   { id: "overview", label: "Overview", sectionIds: ["section-overview"] },
-  { id: "info", label: "Info", sectionIds: ["section-presentation"] },
   { id: "images", label: "Images", sectionIds: ["section-images"] },
   { id: "faqs", label: "FAQs", sectionIds: ["section-faqs"] },
 ];
 
 const SECTIONS = [
   { id: "section-overview", label: "Overview" },
-  { id: "section-presentation", label: "Info" },
   { id: "section-images", label: "Images" },
   { id: "section-faqs", label: "FAQs" },
   { id: "section-seo", label: "SEO" },
@@ -39,8 +38,6 @@ const SECTIONS = [
 
 export interface ActivityFormProps {
   activity: Activity | null;
-  /** Icon names already in use, offered as suggestions. */
-  iconOptions: string[];
   /** How many tour packages reference this activity. Null on a new one. */
   usedByTours: number | null;
   siteUrl: string;
@@ -59,7 +56,6 @@ export interface ActivityFormProps {
  */
 export function ActivityForm({
   activity,
-  iconOptions,
   usedByTours,
   siteUrl,
   basePath = "/activities",
@@ -77,7 +73,7 @@ export function ActivityForm({
   // Mirrored out of the Images tab so the SEO panel grades the picture that is
   // on screen rather than the one that was last saved.
   const [seoImage, setSeoImage] = useState(activity?.featuredImage ?? "");
-  const [status, setStatus] = useState(activity?.status ?? "draft");
+  const [status, setStatus] = useState(activity?.status ?? defaultNewStatus(canPublish));
 
   const errors = state.fieldErrors ?? {};
 
@@ -164,34 +160,6 @@ export function ActivityForm({
               />
           </FormSection>
 
-          <FormSection id="section-presentation" title="Info" bodyClassName="space-y-5">
-              <Field
-                id="icon"
-                label="Icon"
-                error={errors.icon?.[0]}
-                /* Not a file. Without this the field reads as an upload slot. */
-                hint="A name your frontend maps to an icon."
-              >
-                {(props) => (
-                  <>
-                    <Input
-                      {...props}
-                      name="icon"
-                      defaultValue={activity?.icon ?? ""}
-                      list="activity-icons"
-                      placeholder="mountain-snow"
-                      className="font-mono text-xs"
-                    />
-                    <datalist id="activity-icons">
-                      {iconOptions.map((option) => (
-                        <option key={option} value={option} />
-                      ))}
-                    </datalist>
-                  </>
-                )}
-              </Field>
-          </FormSection>
-
           <FormSection id="section-images" title="Images">
             <FeaturedImagesField
               record={activity}
@@ -256,13 +224,17 @@ export function ActivityForm({
                 </p>
               ) : null}
 
-              {status === "scheduled" ? (
+              {status === "published" || status === "scheduled" ? (
                 <Field
                   id="publishedAt"
-                  label="Publish at"
+                  label={status === "scheduled" ? "Publish at" : "Published on"}
                   error={errors.publishedAt?.[0]}
-                  hint="Goes live automatically once this time passes."
-                  required
+                  hint={
+                    status === "scheduled"
+                      ? "Goes live automatically once this time passes."
+                      : "Back-date or post-date it. Leave blank to stamp it now."
+                  }
+                  required={status === "scheduled"}
                 >
                   {(props) => (
                     <Input

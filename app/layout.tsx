@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Mulish } from "next/font/google";
 
+import { TopLoader } from "@/components/ui/top-loader";
 import { settings } from "@/lib/cms/repositories/settings";
 
 import "./globals.css";
@@ -48,7 +49,10 @@ export default function RootLayout({
       className={`${mulish.variable} h-full`}
       suppressHydrationWarning
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        <TopLoader />
+        {children}
+      </body>
     </html>
   );
 }

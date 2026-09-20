@@ -84,4 +84,32 @@ export default defineRoutes([
     description:
       "Enquiry form. Posts to cms.enquiries.create(); replies land in /admin/enquiries.",
   },
+  {
+    /*
+     * The traveller account area. `cmsMetadata` is off for all three and
+     * `noSitemap` is on: these pages are private to the person reading them,
+     * so a CMS-managed title and description would be a setting nobody ever
+     * sees the effect of, and listing a sign-in form in the sitemap invites a
+     * crawler to index a page it can never load.
+     */
+    path: "/account",
+    noSitemap: true,
+    label: "Traveller account",
+    description:
+      "A signed-in customer's own details. Redirects to /account/login otherwise.",
+  },
+  {
+    path: "/account/login",
+    noSitemap: true,
+    label: "Traveller sign-in",
+    description:
+      "Public sign-in. Staff credentials are refused here; they belong at /admin/login.",
+  },
+  {
+    path: "/account/register",
+    noSitemap: true,
+    label: "Traveller sign-up",
+    description:
+      "Creates an account with the `traveller` role, which grants no admin access.",
+  },
 ]);

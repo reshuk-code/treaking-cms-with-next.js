@@ -173,6 +173,23 @@ export default async function FrontendLayout({
               </p>
             ) : null}
 
+            {/*
+              One static link for both states, rather than "Sign in" or "Your
+              account" depending on who is reading.
+
+              Deciding that here would mean reading the session cookie in the
+              root layout, which opts every page on the public site out of
+              static rendering — a steep price for one word in the header. The
+              account page itself is dynamic and redirects a signed-out visitor
+              to the sign-in form, so the link is right either way.
+            */}
+            <Link
+              href="/account"
+              className="hidden shrink-0 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground sm:block"
+            >
+              Account
+            </Link>
+
             {headerCta ? (
               <Link
                 href={headerCta.href}

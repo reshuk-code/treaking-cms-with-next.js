@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/field";
 import { useFormFeedback } from "@/hooks/use-form-feedback";
 import { IDLE } from "@/lib/actions/result";
+import { defaultNewStatus } from "@/lib/publishing";
 import { BlockEditor } from "@/components/cms/block-editor";
 import { normaliseSlug } from "@/schemas/common";
 import { toDateTimeLocal } from "@/lib/utils";
@@ -53,7 +54,7 @@ export function PageForm({
   );
   const slug = slugOverride ?? (title ? normaliseSlug(title) : "");
   const [excerpt, setExcerpt] = useState(page?.excerpt ?? "");
-  const [status, setStatus] = useState(page?.status ?? "draft");
+  const [status, setStatus] = useState(page?.status ?? defaultNewStatus(canPublish));
   const [meta, setMeta] = useState<{ key: string; value: string }[]>(
     Object.entries(page?.meta ?? {}).map(([key, value]) => ({ key, value })),
   );
@@ -285,13 +286,17 @@ export function PageForm({
                 </p>
               ) : null}
 
-              {status === "scheduled" ? (
+              {status === "published" || status === "scheduled" ? (
                 <Field
                   id="publishedAt"
-                  label="Publish at"
+                  label={status === "scheduled" ? "Publish at" : "Published on"}
                   error={errors.publishedAt?.[0]}
-                  hint="The page goes live automatically once this time passes."
-                  required
+                  hint={
+                    status === "scheduled"
+                      ? "The page goes live automatically once this time passes."
+                      : "Back-date or post-date it. Leave blank to stamp it now."
+                  }
+                  required={status === "scheduled"}
                 >
                   {(props) => (
                     <Input

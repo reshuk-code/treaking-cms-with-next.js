@@ -8,6 +8,7 @@ import { activity } from "@/lib/cms/repositories/activity";
 import { settings } from "@/lib/cms/repositories/settings";
 import { users } from "@/lib/cms/repositories/users";
 import { credentialsSchema, setupSchema } from "@/schemas/user";
+import { isStaffRole } from "@/types/user";
 
 /**
  * Sign in.
@@ -31,6 +32,21 @@ export async function signInAction(
   try {
     const session = await signIn(parsed.data);
     if (!session) {
+      return actionError("Those details do not match an active account.");
+    }
+
+    /*
+     * A traveller's credentials are valid, just not for this door. The session
+     * is destroyed rather than left to be bounced by the dashboard layout, so
+     * a customer who mistypes the admin URL does not walk away holding a
+     * cookie they cannot use.
+     *
+     * The message is the same one a wrong password gets: saying "that is a
+     * traveller account" would confirm the address is registered, which is the
+     * account enumeration this form already avoids.
+     */
+    if (!isStaffRole(session.role)) {
+      await signOut();
       return actionError("Those details do not match an active account.");
     }
 

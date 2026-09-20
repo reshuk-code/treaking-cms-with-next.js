@@ -61,7 +61,7 @@ config/routes.ts         Routes you hand-built, declared for the admin.
 |---|---|
 | Pages | Create, edit, duplicate, schedule, preview, trash. Nested pages. |
 | Blog | Posts with an author byline, one category, free tags, reading time. |
-| Destinations | Places with coordinates, best season, highlights and a gallery. |
+| Destinations | The countries you sell trips in, with a description, FAQs and a gallery. |
 | Tour packages | Price, length, difficulty, inclusions, FAQs and a day-by-day itinerary. |
 | Activities | What travellers do, tagged onto tour packages. |
 | Testimonials | Quotes with a rating and attribution. No page of their own. |

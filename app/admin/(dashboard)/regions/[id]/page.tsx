@@ -19,9 +19,8 @@ export default async function EditRegionPage({
   const session = await requirePermission("regions.update");
   const { id } = await params;
 
-  const [region, countries, siteUrl] = await Promise.all([
+  const [region, siteUrl] = await Promise.all([
     regions.get(id),
-    regions.countries(),
     settings.siteUrl(),
   ]);
 
@@ -41,7 +40,6 @@ export default async function EditRegionPage({
 
       <RegionForm
         region={region}
-        countryOptions={countries}
         siteUrl={siteUrl}
         canPublish={hasPermission({ role: session.role }, "regions.publish")}
       />

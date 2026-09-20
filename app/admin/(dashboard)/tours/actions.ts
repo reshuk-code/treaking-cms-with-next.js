@@ -50,7 +50,6 @@ function parseFormData(
   return {
     name: formString(formData.get("name")),
     slug: formString(formData.get("slug")) || formString(formData.get("name")),
-    shortDescription: formString(formData.get("shortDescription")),
     description: formString(formData.get("description")),
     tripInfo: formString(formData.get("tripInfo")),
     featuredImage: formString(formData.get("featuredImage")),
@@ -71,8 +70,10 @@ function parseFormData(
     groupSizeMax: formString(formData.get("groupSizeMax")),
     maxAltitude: formString(formData.get("maxAltitude")),
 
-    destinationId: formString(formData.get("destinationId")),
+    destinationIds: formData.getAll("destinationIds").map(String),
+    regionIds: formData.getAll("regionIds").map(String),
     activityIds: formData.getAll("activityIds").map(String),
+    categoryIds: formData.getAll("categoryIds").map(String),
 
     itinerary,
     groupPricing,

@@ -3,8 +3,6 @@ import { z } from "zod";
 import {
   bareSlugSchema,
   contentStatusSchema,
-  optionalNumber,
-  optionalText,
   optionalUrl,
 } from "./common";
 import { richContentSchema } from "./rich-text";
@@ -29,45 +27,17 @@ export const MONTHS = [
 
 export const monthSchema = z.enum(MONTHS);
 
-/** Repeatable text rows arrive as many inputs of the same name. */
-export const stringListSchema = z
-  .array(z.string())
-  .default([])
-  .transform((values) =>
-    values.map((value) => value.trim()).filter(Boolean).slice(0, 50),
-  );
-
-/**
- * Input accepted when creating or updating a destination.
- *
- * Coordinates are validated to real ranges rather than merely "a number": a
- * transposed latitude and longitude is the classic way to put a Nepali valley
- * in the Indian Ocean, and the range check catches half of those.
- */
+/** Input accepted when creating or updating a destination. */
 export const destinationInputSchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(200),
   slug: bareSlugSchema,
-  shortDescription: optionalText,
   description: richContentSchema,
   featuredImage: optionalUrl,
   featuredImageHorizontal: optionalUrl,
   featuredImageVertical: optionalUrl,
   bannerImage: optionalUrl,
   gallery: z.array(z.string().trim()).default([]),
-  country: optionalText,
-  region: optionalText,
-  latitude: optionalNumber.refine(
-    (value) => value === null || (value >= -90 && value <= 90),
-    "Latitude must be between -90 and 90.",
-  ),
-  longitude: optionalNumber.refine(
-    (value) => value === null || (value >= -180 && value <= 180),
-    "Longitude must be between -180 and 180.",
-  ),
-  highlights: richContentSchema,
   faqs: z.array(embeddedFaqSchema).max(50).default([]),
-  bestSeason: z.array(monthSchema).default([]),
-  typicalDuration: optionalText,
   featured: z.coerce.boolean().default(false),
   order: z.coerce.number().int().default(0),
   status: contentStatusSchema.default("draft"),
@@ -92,18 +62,6 @@ export const destinationInputWithRulesSchema =
         message: "Pick a publication date to schedule this destination.",
       });
     }
-
-    // One coordinate alone cannot place anything on a map, and a half-filled
-    // pair is more likely a slip than an intention.
-    const hasLat = value.latitude !== null;
-    const hasLng = value.longitude !== null;
-    if (hasLat !== hasLng) {
-      ctx.addIssue({
-        code: "custom",
-        path: [hasLat ? "longitude" : "latitude"],
-        message: "Give both coordinates, or neither.",
-      });
-    }
   });
 
 export type DestinationInput = z.input<typeof destinationInputSchema>;
@@ -111,6 +69,5 @@ export type DestinationInputParsed = z.output<typeof destinationInputSchema>;
 
 /** Query-string parameters for the destinations list, beyond the shared ones. */
 export const destinationFiltersSchema = z.object({
-  country: z.string().trim().default(""),
   featured: z.enum(["", "yes", "no"]).default(""),
 });

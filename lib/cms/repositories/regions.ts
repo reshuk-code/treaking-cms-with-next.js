@@ -6,6 +6,7 @@ import { slugify } from "@/schemas/common";
 import type { RegionInputParsed } from "@/schemas/region";
 import type { FilterCondition, ListOptions, Paginated } from "@/types/common";
 import type { Region } from "@/types/content";
+import { EMPTY_SEO } from "@/types/seo";
 
 import {
   buildListQuery,
@@ -15,9 +16,9 @@ import {
 } from "./base";
 import type { WriteContext } from "./pages";
 
-const SEARCH_FIELDS = ["name", "slug", "shortDescription", "country"];
+const SEARCH_FIELDS = ["name", "slug"];
 
-/** Ceiling for the country scan. See the note on `media.folders()`. */
+/** Ceiling for an unpaginated scan. See the note on `media.folders()`. */
 const FACET_SCAN_LIMIT = 2000;
 
 async function collection() {
@@ -25,7 +26,6 @@ async function collection() {
 }
 
 export interface RegionListOptions extends ListOptions {
-  country?: string;
   featured?: boolean;
 }
 
@@ -49,9 +49,6 @@ export const regions = {
     const query = buildListQuery(options, SEARCH_FIELDS);
 
     const where: FilterCondition[] = [...(query.where ?? [])];
-    if (options?.country) {
-      where.push({ field: "country", op: "eq", value: options.country });
-    }
     if (options?.featured !== undefined) {
       where.push({ field: "featured", op: "eq", value: options.featured });
     }
@@ -91,9 +88,6 @@ export const regions = {
     const store = await collection();
 
     const where: FilterCondition[] = [PUBLIC_STATUS_FILTER];
-    if (options?.country) {
-      where.push({ field: "country", op: "eq", value: options.country });
-    }
     if (options?.featured !== undefined) {
       where.push({ field: "featured", op: "eq", value: options.featured });
     }
@@ -119,23 +113,28 @@ export const regions = {
     return store.count(buildListQuery(options, SEARCH_FIELDS));
   },
 
-  /** Countries in use, for the filter dropdown and the editor's datalist. */
-  async countries(): Promise<string[]> {
+  /** Minimal projection, for any picker that later references a region. */
+  /**
+   * Resolves the ids a tour stores, in the order the tour stores them.
+   *
+   * Stale ids are dropped rather than reported, for the same reason as
+   * `activities.byIds`: nothing rewrites a tour when a record is deleted.
+   */
+  async byIds(ids: string[]): Promise<Region[]> {
+    if (ids.length === 0) return [];
+
     const store = await collection();
-    const all = await store.findMany({
-      where: [{ field: "status", op: "ne", value: "trash" }],
+    const found = await store.findMany({
+      where: [{ field: "id", op: "in", value: ids }],
       limit: FACET_SCAN_LIMIT,
     });
 
-    const names = new Set<string>();
-    for (const record of all) {
-      if (record.country) names.add(record.country);
-    }
-
-    return [...names].sort((a, b) => a.localeCompare(b));
+    const byId = new Map(found.map((record) => [record.id, record]));
+    return ids
+      .map((id) => byId.get(id))
+      .filter((record): record is Region => record !== undefined);
   },
 
-  /** Minimal projection, for any picker that later references a region. */
   async options(): Promise<{ id: string; name: string; slug: string }[]> {
     const store = await collection();
     const all = await store.findMany({
@@ -145,6 +144,43 @@ export const regions = {
     });
 
     return all.map(({ id, name, slug }) => ({ id, name, slug }));
+  },
+
+  /**
+   * Creates a region from the tour editor's inline control.
+   *
+   * Name and slug only, pinned to `draft`: see the note on
+   * `tourCategories.quickCreate`. An existing slug is returned as-is rather
+   * than raising a conflict.
+   */
+  async quickCreate(
+    input: { name: string; slug: string },
+    ctx: WriteContext,
+  ): Promise<Region> {
+    const store = await collection();
+
+    const existing = await store.findOne({
+      where: [{ field: "slug", op: "eq", value: input.slug }],
+    });
+    if (existing) return existing;
+
+    return store.create({
+      name: input.name,
+      slug: input.slug,
+      description: "",
+      featuredImage: "",
+      featuredImageHorizontal: "",
+      featuredImageVertical: "",
+      bannerImage: "",
+      gallery: [],
+      faqs: [],
+      featured: false,
+      order: 0,
+      status: "draft",
+      publishedAt: null,
+      seo: EMPTY_SEO,
+      updatedBy: ctx.userId,
+    });
   },
 
   async create(input: RegionInputParsed, ctx: WriteContext): Promise<Region> {
@@ -234,18 +270,13 @@ function fields(input: RegionInputParsed) {
   return {
     name: input.name,
     slug: input.slug,
-    shortDescription: input.shortDescription,
     description: input.description,
     featuredImage: input.featuredImage,
     featuredImageHorizontal: input.featuredImageHorizontal,
     featuredImageVertical: input.featuredImageVertical,
     bannerImage: input.bannerImage,
     gallery: input.gallery,
-    country: input.country,
-    elevationRange: input.elevationRange,
-    highlights: input.highlights,
     faqs: input.faqs,
-    bestSeason: input.bestSeason,
     featured: input.featured,
     order: input.order,
     status: input.status,

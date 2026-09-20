@@ -25,7 +25,7 @@ const IMAGE_WIDTH = 1600;
  *
  * Deriving ids from slugs rather than generating them means re-running the
  * seeder updates the same records instead of duplicating them, and lets a
- * tour's `destinationId` be written directly without a lookup pass.
+ * tour's `destinationIds` be written directly without a lookup pass.
  */
 export function stableId(seed) {
   const bytes = createHash("sha1")

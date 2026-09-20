@@ -1,7 +1,15 @@
 "use client";
 
 import { Save } from "lucide-react";
-import { startTransition, useActionState, useRef, useState, type FormEvent } from "react";
+import {
+  startTransition,
+  useActionState,
+  useRef,
+  useState,
+  type Dispatch,
+  type FormEvent,
+  type SetStateAction,
+} from "react";
 
 import { saveTourAction } from "@/app/admin/(dashboard)/tours/actions";
 import { FaqEditor } from "@/components/cms/faq-editor";
@@ -20,10 +28,20 @@ import {
   Field,
   Input,
   Select,
-  Textarea,
 } from "@/components/ui/field";
 import { useFormFeedback } from "@/hooks/use-form-feedback";
-import { IDLE } from "@/lib/actions/result";
+import {
+  quickCreateTourCategoryAction,
+} from "@/app/admin/(dashboard)/trip-categories/actions";
+import { quickCreateRegionAction } from "@/app/admin/(dashboard)/regions/actions";
+import { quickCreateActivityAction } from "@/app/admin/(dashboard)/activities/actions";
+import {
+  QuickAddField,
+  type QuickAddOption,
+} from "@/components/cms/quick-add-field";
+import { IDLE, type ActionState } from "@/lib/actions/result";
+import { defaultNewStatus } from "@/lib/publishing";
+import { richTextExcerpt } from "@/lib/rich-text";
 import { slugify } from "@/schemas/common";
 import { MONTHS } from "@/schemas/destination";
 import { richListContentToValue } from "@/lib/rich-text";
@@ -82,8 +100,17 @@ export interface TourFormProps {
   tour: TourPackage | null;
   /** Destinations this tour can belong to. */
   destinationOptions: { id: string; name: string }[];
+  /** Regions this tour can belong to. */
+  regionOptions: { id: string; name: string }[];
   /** Activities this tour can be tagged with. */
   activityOptions: { id: string; name: string }[];
+  /** Commercial tiers this tour can be sold under. */
+  categoryOptions: { id: string; name: string }[];
+  /**
+   * Which lists offer a "New …" control. One flag per resource because the
+   * permissions are separate: a role may create regions but not activities.
+   */
+  canQuickAdd: { categories: boolean; regions: boolean; activities: boolean };
   siteUrl: string;
   /** Where the frontend mounts tours. For the slug hint only. */
   basePath?: string;
@@ -101,7 +128,10 @@ export interface TourFormProps {
 export function TourForm({
   tour,
   destinationOptions,
+  regionOptions,
   activityOptions,
+  categoryOptions,
+  canQuickAdd,
   siteUrl,
   basePath = "/tours",
   canPublish,
@@ -114,9 +144,6 @@ export function TourForm({
     tour?.slug ?? null,
   );
   const slug = slugOverride ?? (name ? slugify(name) : "");
-  const [shortDescription, setShortDescription] = useState(
-    tour?.shortDescription ?? "",
-  );
   // Mirrored out of the editors so the SEO panel grades what is on
   // screen rather than what was last saved.
   // Controlled so the group rate table can label its prices as you type.
@@ -125,16 +152,38 @@ export function TourForm({
   const [seoContent, setSeoContent] = useState(tour?.description ?? "");
   const [seoImage, setSeoImage] = useState(tour?.featuredImage ?? "");
 
-  const [status, setStatus] = useState(tour?.status ?? "draft");
+  const [status, setStatus] = useState(tour?.status ?? defaultNewStatus(canPublish));
 
   const errors = state.fieldErrors ?? {};
   const season = new Set(tour?.bestSeason ?? []);
 
-  const taggedActivities = new Set(tour?.activityIds ?? []);
-  const listedActivities = new Set(activityOptions.map((option) => option.id));
-  const unlistedActivityIds = (tour?.activityIds ?? []).filter(
-    (id) => !listedActivities.has(id),
+  /*
+   * The Placement tick-boxes are controlled rather than uncontrolled, which
+   * the rest of this form avoids. They have to be: "New category" creates a
+   * record and ticks it in the same gesture, and there is no way to tick an
+   * already-rendered uncontrolled box without writing to the DOM by hand.
+   */
+  const [selectedDestinations, setSelectedDestinations] = useState<string[]>(
+    tour?.destinationIds ?? [],
   );
+  const [selectedRegions, setSelectedRegions] = useState<string[]>(
+    tour?.regionIds ?? [],
+  );
+  const [selectedActivities, setSelectedActivities] = useState<string[]>(
+    tour?.activityIds ?? [],
+  );
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    tour?.categoryIds ?? [],
+  );
+
+  // Records created from this panel, appended to what the server sent.
+  const [addedRegions, setAddedRegions] = useState<QuickAddOption[]>([]);
+  const [addedActivities, setAddedActivities] = useState<QuickAddOption[]>([]);
+  const [addedCategories, setAddedCategories] = useState<QuickAddOption[]>([]);
+
+  const regionChoices = [...regionOptions, ...addedRegions];
+  const activityChoices = [...activityOptions, ...addedActivities];
+  const categoryChoices = [...categoryOptions, ...addedCategories];
 
   /**
    * Submitting by hand rather than through `<form action=…>`: React resets
@@ -210,23 +259,6 @@ export function TourForm({
                     placeholder="everest-base-camp-trek"
                     className="font-mono text-xs"
                     required
-                  />
-                )}
-              </Field>
-
-              <Field
-                id="shortDescription"
-                label="Short description"
-                error={errors.shortDescription?.[0]}
-                hint="One or two lines for cards and listings."
-              >
-                {(props) => (
-                  <Textarea
-                    {...props}
-                    name="shortDescription"
-                    value={shortDescription}
-                    onChange={(event) => setShortDescription(event.target.value)}
-                    rows={2}
                   />
                 )}
               </Field>
@@ -521,7 +553,7 @@ export function TourForm({
             id="section-seo"
             seo={tour?.seo ?? null}
             fallbackTitle={name}
-            fallbackDescription={shortDescription}
+            fallbackDescription={richTextExcerpt(seoContent, { maxChars: 160 })}
             slug={`${basePath}/${slug}`}
             siteUrl={siteUrl}
             errors={errors}
@@ -577,13 +609,17 @@ export function TourForm({
                 </p>
               ) : null}
 
-              {status === "scheduled" ? (
+              {status === "published" || status === "scheduled" ? (
                 <Field
                   id="publishedAt"
-                  label="Publish at"
+                  label={status === "scheduled" ? "Publish at" : "Published on"}
                   error={errors.publishedAt?.[0]}
-                  hint="Goes live automatically once this time passes."
-                  required
+                  hint={
+                    status === "scheduled"
+                      ? "Goes live automatically once this time passes."
+                      : "Back-date or post-date it. Leave blank to stamp it now."
+                  }
+                  required={status === "scheduled"}
                 >
                   {(props) => (
                     <Input
@@ -612,27 +648,62 @@ export function TourForm({
           <Card>
             <CardHeader title="Placement" />
             <CardBody className="space-y-4">
-              <Field
-                id="destinationId"
-                label="Destination"
-                error={errors.destinationId?.[0]}
-                hint="Where this tour goes. Used to list tours on a destination page."
-              >
-                {(props) => (
-                  <Select
-                    {...props}
-                    name="destinationId"
-                    defaultValue={tour?.destinationId ?? ""}
-                  >
-                    <option value="">No destination</option>
-                    {destinationOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.name}
-                      </option>
-                    ))}
-                  </Select>
-                )}
-              </Field>
+              <TagGroup
+                name="categoryIds"
+                legend="Categories"
+                options={categoryChoices}
+                selected={selectedCategories}
+                onToggle={toggle(setSelectedCategories)}
+                emptyText="No categories yet."
+                hint="How this trip is sold — Luxury, VIP, Budget."
+                quickAdd={
+                  canQuickAdd.categories
+                    ? {
+                        label: "category",
+                        placeholder: "Luxury",
+                        action: quickCreateTourCategoryAction,
+                        onCreated: addTo(setAddedCategories, setSelectedCategories),
+                      }
+                    : null
+                }
+              />
+
+              <hr className="border-border" />
+
+              <TagGroup
+                name="destinationIds"
+                legend="Destinations"
+                options={destinationOptions}
+                selected={selectedDestinations}
+                onToggle={toggle(setSelectedDestinations)}
+                emptyText="No destinations yet. Add some under Destinations and they will appear here."
+                hint="Where this trip goes. Used to list it on a destination page."
+                quickAdd={null}
+              />
+
+              <hr className="border-border" />
+
+              <TagGroup
+                name="regionIds"
+                legend="Regions"
+                options={regionChoices}
+                selected={selectedRegions}
+                onToggle={toggle(setSelectedRegions)}
+                emptyText="No regions yet."
+                hint="The areas within a destination this trip covers."
+                quickAdd={
+                  canQuickAdd.regions
+                    ? {
+                        label: "region",
+                        placeholder: "Annapurna",
+                        action: quickCreateRegionAction,
+                        onCreated: addTo(setAddedRegions, setSelectedRegions),
+                      }
+                    : null
+                }
+              />
+
+              <hr className="border-border" />
 
               <CheckboxField
                 id="featured"
@@ -658,46 +729,27 @@ export function TourForm({
                 )}
               </Field>
 
-              <fieldset className="space-y-2">
-                <legend className="text-sm font-medium text-foreground">
-                  Activities
-                </legend>
+              <hr className="border-border" />
 
-                {activityOptions.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    No activities yet. Add some under Activities and they will
-                    appear here.
-                  </p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {activityOptions.map((option) => (
-                      <CheckboxField
-                        key={option.id}
-                        id={`activityIds-${option.id}`}
-                        name="activityIds"
-                        value={option.id}
-                        label={option.name}
-                        defaultChecked={taggedActivities.has(option.id)}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                <p className="text-xs text-muted-foreground">
-                  What this tour involves. Used to cross-list it on activity
-                  pages.
-                </p>
-              </fieldset>
-
-              {/*
-                Ids the picker cannot show — an activity moved to trash, or the
-                whole module switched off for this client — are posted back
-                verbatim. Without this, opening a tour would silently strip
-                tags whose activity happened to be hidden at the time.
-              */}
-              {unlistedActivityIds.map((id) => (
-                <input key={id} type="hidden" name="activityIds" value={id} />
-              ))}
+              <TagGroup
+                name="activityIds"
+                legend="Activities"
+                options={activityChoices}
+                selected={selectedActivities}
+                onToggle={toggle(setSelectedActivities)}
+                emptyText="No activities yet."
+                hint="What this tour involves. Used to cross-list it on activity pages."
+                quickAdd={
+                  canQuickAdd.activities
+                    ? {
+                        label: "activity",
+                        placeholder: "Trekking",
+                        action: quickCreateActivityAction,
+                        onCreated: addTo(setAddedActivities, setSelectedActivities),
+                      }
+                    : null
+                }
+              />
             </CardBody>
           </Card>
         </div>
@@ -705,4 +757,114 @@ export function TourForm({
       </FormSections>
     </form>
   );
+}
+
+/** One tick-box list in the Placement panel, with its optional "New …". */
+function TagGroup({
+  name,
+  legend,
+  options,
+  selected,
+  onToggle,
+  emptyText,
+  hint,
+  quickAdd,
+}: {
+  name: string;
+  legend: string;
+  options: QuickAddOption[];
+  selected: string[];
+  onToggle: (id: string) => void;
+  emptyText: string;
+  hint: string;
+  quickAdd: {
+    label: string;
+    placeholder: string;
+    action: (name: string, slug: string) => Promise<ActionState>;
+    onCreated: (option: QuickAddOption) => void;
+  } | null;
+}) {
+  const listed = new Set(options.map((option) => option.id));
+
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-sm font-medium text-foreground">{legend}</legend>
+
+      {options.length === 0 ? (
+        <p className="text-xs text-muted-foreground">{emptyText}</p>
+      ) : (
+        <div className="space-y-1.5">
+          {options.map((option) => (
+            <CheckboxField
+              key={option.id}
+              id={`${name}-${option.id}`}
+              name={name}
+              value={option.id}
+              label={option.name}
+              checked={selected.includes(option.id)}
+              onChange={() => onToggle(option.id)}
+            />
+          ))}
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground">{hint}</p>
+
+      {quickAdd ? (
+        <QuickAddField
+          label={quickAdd.label}
+          placeholder={quickAdd.placeholder}
+          action={quickAdd.action}
+          onCreated={quickAdd.onCreated}
+        />
+      ) : null}
+
+      {/*
+        Ids the picker cannot show — a record moved to trash, or the whole
+        module switched off for this client — are posted back verbatim.
+        Without this, opening a tour would silently strip tags whose record
+        happened to be hidden at the time.
+      */}
+      {selected
+        .filter((id) => !listed.has(id))
+        .map((id) => (
+          <input key={id} type="hidden" name={name} value={id} />
+        ))}
+    </fieldset>
+  );
+}
+
+/** Adds or removes one id from a selection. */
+function toggle(
+  setSelected: Dispatch<SetStateAction<string[]>>,
+): (id: string) => void {
+  return (id) =>
+    setSelected((current) =>
+      current.includes(id)
+        ? current.filter((value) => value !== id)
+        : [...current, id],
+    );
+}
+
+/**
+ * Handles a record created from the panel: list it and tick it.
+ *
+ * Both guards matter. `quickCreate` returns the existing record when the slug
+ * is already taken, so the same option can arrive twice — once it would be a
+ * duplicate checkbox, once a duplicate posted id.
+ */
+function addTo(
+  setOptions: Dispatch<SetStateAction<QuickAddOption[]>>,
+  setSelected: Dispatch<SetStateAction<string[]>>,
+): (option: QuickAddOption) => void {
+  return (option) => {
+    setOptions((current) =>
+      current.some((existing) => existing.id === option.id)
+        ? current
+        : [...current, option],
+    );
+    setSelected((current) =>
+      current.includes(option.id) ? current : [...current, option.id],
+    );
+  };
 }

@@ -331,6 +331,46 @@ sign in with, or they are refused.
 
 ---
 
+## Traveller accounts
+
+Visitors can hold an account of their own: `/account/register`,
+`/account/login` and `/account`, with the forms in
+`components/frontend/account-forms.tsx`. Like `enquiry-form.tsx`, those are
+reference markup with no design system — restyle them, the seam underneath
+does not move.
+
+A traveller is a sixth role in the same `users` collection, **not** a second
+user store. Two rules follow from that, and neither is optional:
+
+- **`traveller` grants nothing.** `ROLE_PERMISSIONS.traveller` is `[]`, which
+  is what makes `requirePermission()` refuse them everywhere in the CMS. Do not
+  add a permission to it. If a signed-in visitor needs to read something, give
+  the repository a method that checks ownership — a permission would also
+  unlock the admin screen behind it.
+- **Never offer `ROLES` in an admin control.** Use `STAFF_ROLES`, or you have
+  built a way to promote a customer into the CMS. Parse any role you accept
+  with `roleSchema`, which admits staff roles only.
+
+To read the current visitor from your own pages, use `lib/auth/traveller.ts` —
+`getTraveller()` for an optional one, `requireTraveller()` to demand one — and
+not `getSession()`, which may belong to an editor who is also browsing the
+site.
+
+Do not read the session in `app/(frontend)/layout.tsx`. Touching cookies there
+makes every page on the site dynamic; that is why the header carries one static
+"Account" link rather than a personalised one.
+
+**Not built, by design:** password reset and email verification. This template
+ships no mailer, and the account screens say so rather than showing a "Forgot
+password?" link that goes nowhere. Wire your project's email provider in and
+add the flow — it is a page, an action and a single-use token.
+
+Sign-in verifies a password against the CMS, so it needs the built-in
+`credentials` provider. Under Clerk the CMS does not own the session at all and
+the account pages say so.
+
+---
+
 ## Local development notes
 
 - The `local` database adapter writes JSON to `.cms-data/`. It is for

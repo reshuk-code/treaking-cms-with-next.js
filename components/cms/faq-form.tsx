@@ -10,6 +10,7 @@ import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Field, Input, Label, Select, Textarea } from "@/components/ui/field";
 import { useFormFeedback } from "@/hooks/use-form-feedback";
 import { IDLE } from "@/lib/actions/result";
+import { defaultNewStatus } from "@/lib/publishing";
 import { toDateTimeLocal } from "@/lib/utils";
 import type { Faq } from "@/types/content";
 
@@ -30,7 +31,7 @@ export interface FaqFormProps {
 export function FaqForm({ faq, categoryOptions, canPublish }: FaqFormProps) {
   const [state, formAction, pending] = useActionState(saveFaqAction, IDLE);
 
-  const [status, setStatus] = useState(faq?.status ?? "draft");
+  const [status, setStatus] = useState(faq?.status ?? defaultNewStatus(canPublish));
   const [category, setCategory] = useState<string | null>(faq?.category ?? null);
 
   const errors = state.fieldErrors ?? {};
@@ -129,13 +130,17 @@ export function FaqForm({ faq, categoryOptions, canPublish }: FaqFormProps) {
                 </p>
               ) : null}
 
-              {status === "scheduled" ? (
+              {status === "published" || status === "scheduled" ? (
                 <Field
                   id="publishedAt"
-                  label="Publish at"
+                  label={status === "scheduled" ? "Publish at" : "Published on"}
                   error={errors.publishedAt?.[0]}
-                  hint="Goes live automatically once this time passes."
-                  required
+                  hint={
+                    status === "scheduled"
+                      ? "Goes live automatically once this time passes."
+                      : "Back-date or post-date it. Leave blank to stamp it now."
+                  }
+                  required={status === "scheduled"}
                 >
                   {(props) => (
                     <Input

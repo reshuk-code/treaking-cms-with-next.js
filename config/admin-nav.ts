@@ -24,6 +24,7 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  Tags,
   Terminal,
   Users,
 } from "lucide-react";
@@ -87,6 +88,14 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         icon: Compass,
         module: "tours",
         permission: "tours.read",
+        matchPrefix: true,
+      },
+      {
+        label: "Trip Category",
+        href: "/admin/trip-categories",
+        icon: Tags,
+        module: "tourCategories",
+        permission: "tourCategories.read",
         matchPrefix: true,
       },
       {

@@ -19,9 +19,8 @@ export default async function EditDestinationPage({
   const session = await requirePermission("destinations.update");
   const { id } = await params;
 
-  const [destination, countries, siteUrl] = await Promise.all([
+  const [destination, siteUrl] = await Promise.all([
     destinations.get(id),
-    destinations.countries(),
     settings.siteUrl(),
   ]);
 
@@ -41,7 +40,6 @@ export default async function EditDestinationPage({
 
       <DestinationForm
         destination={destination}
-        countryOptions={countries}
         siteUrl={siteUrl}
         canPublish={hasPermission({ role: session.role }, "destinations.publish")}
       />

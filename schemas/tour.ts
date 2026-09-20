@@ -185,7 +185,6 @@ export const tourFaqSchema = embeddedFaqSchema;
 export const tourInputSchema = z.object({
   name: z.string().trim().min(1, "Name is required.").max(200),
   slug: bareSlugSchema,
-  shortDescription: optionalText,
   tripInfo: richContentSchema,
   description: richContentSchema,
   featuredImage: optionalUrl,
@@ -230,12 +229,10 @@ export const tourInputSchema = z.object({
   groupSizeMax: optionalNumber,
   maxAltitude: optionalNumber,
 
-  destinationId: z
-    .string()
-    .trim()
-    .default("")
-    .transform((value) => (value ? value : null)),
+  destinationIds: z.array(z.string().trim()).default([]),
+  regionIds: z.array(z.string().trim()).default([]),
   activityIds: z.array(z.string().trim()).default([]),
+  categoryIds: z.array(z.string().trim()).default([]),
 
   itinerary: z.array(itineraryDaySchema).max(365).default([]),
   inclusions: richContentSchema,
